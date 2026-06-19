@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAVEN SHIELD: Tactical Campaign Generator</title>
+    <style>
+        :root {
+            --bg: #090b0e;
+            --panel: #12161f;
+            --panel-light: #1a202c;
+            --accent: #ff3b3b;
+            --accent-dim: #a31c1c;
+            --text: #cbd5e1;
+            --text-light: #f8fafc;
+            --text-dark: #64748b;
+            --border: #242b35;
+            --success: #10b981;
+            --fail: #f43f5e;
+            --info: #38bdf8;
+            --radius: 8px;
+        }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg); 
+            color: var(--text); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px; 
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        /* Ambient scanlines overlay */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+            z-index: 99999;
+            opacity: 0.3;
+            pointer-events: none;
+            background-size: 100% 4px;
+        }
+
+        .app-container { 
+            max-width: 780px; 
+            width: 100%; 
+            background: var(--panel); 
+            border: 1px solid var(--border);
+            border-top: 4px solid var(--accent);
+            border-radius: var(--radius);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(255, 59, 59, 0.03); 
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Tactical Header Graphic Element */
+        .banner-header {
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(135deg, #0e1118, rgba(163, 28, 28, 0.12));
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            box-sizing: border-box;
+        }
+
+        .banner-title {
+            font-family: 'Arial Black', -apple-system, sans-serif;
+            font-weight: 900;
+            font-size: 1.8rem;
+            color: var(--text-light);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 0px rgba(163, 28, 28, 0.5);
+            margin: 0;
+        }
+
+        .content-padding {
+            padding: 30px;
+        }
+
+        h2 { 
+            font-family: 'Arial Black', -apple-system, sans-serif;
+            font-weight: 900;
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 12px; 
+            color: var(--text-light); 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            font-size: 1.25rem;
+            margin-top: 0;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        h2::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--accent);
+            margin-right: 12px;
+            border-radius: 2px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
+        .hidden { display: none !important; }
+
+        .briefing-text { 
+            line-height: 1.6; 
+            font-size: 0.95rem; 
+            color: var(--text); 
+            margin: 20px 0; 
+            background: rgba(9, 11, 14, 0.4);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px; 
+        }
+
+        .objective-box { 
+            background: var(--panel-light); 
+            padding: 5px 20px; 
+            border-left: 4px solid var(--accent); 
+            border-top: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            margin-bottom: 25px; 
+        }
+
+        .objective-row {
+            display: flex;
+            flex-direction: column;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding: 12px 0;
+        }
+        .objective-row:last-child { border: none; }
+
+        @media (min-width: 600px) {
+            .objective-row {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+        }
+
+        .label { 
+            color: var(--accent); 
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-weight: bold; 
+            text-transform: uppercase; 
+            font-size: 0.8rem; 
+            letter-spacing: 1px;
+            width: 180px;
+            flex-shrink: 0;
+            margin-bottom: 4px;
+        }
+
+        @media (min-width: 600px) {
+            .label { margin-bottom: 0; }
+        }
+
+        .value {
+            color: var(--text-light);
+            text-transform: uppercase;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        @media (min-width: 600px) {
+            .controls {
+                display: flex;
+                gap: 12px;
+                margin-top: 25px;
+            }
+        }
+
+        .btn { 
+            padding: 12px 24px; 
+            border: 1px solid var(--border); 
+            border-radius: 6px;
+            background: var(--panel-light); 
+            color: var(--text-light); 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            font-weight: bold; 
+            font-size: 0.85rem;
+            font-family: inherit;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease; 
+            width: 100%;
+        }
+
+        @media (min-width: 600px) {
+            .btn { width: auto; }
+        }
+
+        .btn:hover { 
+            background: var(--text-light); 
+            color: #000; 
+            border-color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-setup {
+            border-color: var(--border);
+            color: var(--text);
+            text-align: left;
+            padding: 18px 20px;
+            background: rgba(26, 32, 44, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        .btn-setup:hover {
+            background: rgba(255, 59, 59, 0.05);
+            color: var(--text-light);
+            border-color: var(--accent);
+            transform: translateX(4px);
+        }
+        .btn-setup::after {
+            content: "→";
+            font-size: 1.1rem;
+            opacity: 0.7;
+        }
+
+        .btn-success { border-color: rgba(16, 185, 129, 0.4); color: var(--success); background: rgba(16, 185, 129, 0.04); }
+        .btn-success:hover { background: var(--success); color: #000; border-color: var(--success); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+        
+        .btn-fail { border-color: rgba(244, 63, 94, 0.4); color: var(--fail); background: rgba(244, 63, 94, 0.04); }
+        .btn-fail:hover { background: var(--fail); color: #000; border-color: var(--fail); box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2); }
+        
+        .btn-info { border-color: rgba(56, 189, 248, 0.4); color: var(--info); background: rgba(56, 189, 248, 0.04); }
+        .btn-info:hover { background: var(--info); color: #000; border-color: var(--info); box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2); }
+
+        .watermark {
+            position: absolute;
+            bottom: 12px;
+            right: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.04);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            pointer-events: none;
+            display: none;
+        }
+        @media (min-width: 600px) { .watermark { display: block; } }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="banner-header">
+        <div class="banner-title">Rainbow Six 3: Campaign Generator</div>
+    </div>
+
+    <div class="content-padding">
+        <div id="setup-view">
+            <h2>MISSION CONTROL PANEL</h2>
+            <p style="color: var(--text-dark); margin-bottom: 25px; font-size: 0.95rem;">Select deployment parameters to initialize operational order:</p>
+            <div class="btn-group">
+                <button class="btn btn-setup" onclick="initCampaign(5)">[ 05 PHASES ] - SHORT TERM OPERATION</button>
+                <button class="btn btn-setup" onclick="initCampaign(7)">[ 07 PHASES ] - SUSTAINED CAMPAIGN</button>
+                <button class="btn btn-setup" onclick="initCampaign(10)">[ 10 PHASES ] - EXTENDED ASSIGNMENT</button>
+            </div>
+        </div>
+
+        <div id="mission-view" class="hidden">
+            <h2 id="mission-header">TACTICAL DOSSIER: PHASE I</h2>
+            <div class="objective-box">
+                <div class="objective-row">
+                    <div class="label">> AREA OF OPERATION:</div>
+                    <div class="value" id="map-disp"></div>
+                </div>
+                <div class="objective-row">
+                    <div class="label">> EXPECTED ROE:</div>
+                    <div class="value" id="mode-disp"></div>
+                </div>
+                <div class="objective-row">
+                    <div class="label">> OBJECTIVE DETAILS:</div>
+                    <div id="mode-desc" style="font-size: 0.85rem; color: var(--text-dark); font-weight: 500; margin-top: 4px;"></div>
+                </div>
+            </div>
+            
+            <div style="font-family: 'Consolas', 'Monaco', monospace; font-size: 0.75rem; color: var(--accent); font-weight: bold; letter-spacing: 1px; margin-bottom: -10px;">[ FIELD INTEL BRIEFING ]</div>
+            <div id="story-disp" class="briefing-text"></div>
+            
+            <div class="controls">
+                <button class="btn btn-success" onclick="nextMission()">MISSION ACCOMPLISHED</button>
+                <button class="btn btn-info" onclick="rerollMission()">RE-ROUTE ASSIGNMENT</button>
+                <button class="btn btn-fail" onclick="endCampaign(false)">OPERATOR DOWN / KIA</button>
+            </div>
+        </div>
+
+        <div id="end-view" class="hidden">
+            <h1 id="end-status" style="font-family: 'Arial Black', sans-serif; font-weight:900; font-size: 1.8rem; letter-spacing: 0.5px; text-transform: uppercase; margin-top:0;"></h1>
+            <div id="end-story" class="briefing-text"></div>
+            <button class="btn" style="width:100%" onclick="location.reload()">RE-INITIALIZE NETCOM</button>
+        </div>
+    </div>
+    <div class="watermark">RAVEN SHIELD STYLED UI // DIRECTIVE 6</div>
+</div>
+
+<script>
+    // Full roster of all 94 maps
+    const maps = [
+        "Oil Refinery", "Alpine Village", "Mountain Highway", "Shipyard", "Private Airport", 
+        "Island Estate", "Meat Packing Plant", "Import-Export", "Penthouse", "Banking House", 
+        "Meat Packing Plant 2", "Island Estate 2", "Garage", "Parade Line-up", "Alley Strike", 
+        "Ancient Temple", "Chapel", "Firehouse", "The Mall", "Convenience Store", 
+        "Back Alley", "Chemical Zero", "The Compound", "Disgruntled Customers", "Desal", 
+        "Quartier General", "Quartier General 2", "El Diablo's Club", "Emergency Room", "Falling Rain", 
+        "Garage (Dark)", "Down the Rabbit Hole", "Water Treatment Facility", "Water Treatment Facility 2", "Heat", 
+        "IG Embassy", "IG Canals of Venice", "Import Export (Dark)", "Island Estate Night", "Metropolitan Library", 
+        "Made of Stone", "Cinema", "Norad", "Parade (Dark)", "Playground", 
+        "Port Town", "Factory", "Black Star", "Residential Trauma", "Weapon Deal", 
+        "Rich", "Rich 2", "Modern Office", "Modern Office 2", "Spa", 
+        "London Wharf", "Chalet Fall", "Art Museum", "Oil Tanker", "Shopping Spree", 
+        "Locked Up", "Trailer Park", "Transport", "Flynn's Arcade", "Vice Bar", 
+        "Village", "Village Snow", "Bowling Alley", "Weapons Cache", "White Oak", 
+        "UnderWorld", "Underworld 2", "Embassy", "Agora Market", "A Castle in Milan", 
+        "Luxury Hotel", "Luxury Hotel Night", "Old City", "Street's of Milan", "Italian Warehouse", 
+        "Warehouse Night", "Siberian Base", "Subway Station", "Cold Thunder", "Docks", 
+        "Iron Comet", "Kilment Ohridski University", "Little Wing", "Military Installation", "Nuclear Reactor", 
+        "Safe House", "Storage Facility", "Training Camp"
+    ];
+    
+    const modes = [
+        { name: "Terrorist Hunt", desc: "Systematic elimination of all hostile combatants on-site." },
+        { name: "Hostage Rescue", desc: "Locate and secure all civilians before they are harmed." },
+        { name: "Lone Wolf", desc: "Single-operator infiltration and successful exfiltration." },
+        { name: "Stealth Wolf", desc: "Infiltrate, complete objectives, and extract without alerting hostiles." },
+        { name: "Stealth Hunt", desc: "Eliminate all hostiles while maintaining absolute ghost status." }
+    ];
+
+    // Map narratives
+    const customMapNarratives = {
+        "Oil Refinery": "Towering distillation columns hiss with volatile gases. Hostiles have seized control of the primary valves, threatening a catastrophic structural blow-out.",
+        "Alpine Village": "Snow-covered chalets and winding mountain paths present high-ground vulnerabilities. A quiet getaway turned frozen winter battleground.",
+        "Mountain Highway": "A blinding blizzard has trapped a critical logistics convoy. Terrorists have seized control of this frozen, high-altitude mountain pass, transforming the highway into a lethal bottleneck.",
+        "Shipyard": "Massive cargo hulls and towering gantry cranes dominate the skyline. Rain-slicked metal walkways provide little cover from watchful perimeter guards.",
+        "Private Airport": "A luxury private hangar filled with corporate aircraft. Intelligence reports a high-value cell leader is attempting an immediate tarmac evacuation.",
+        "Island Estate": "A sun-drenched private paradise converted into a coastal fortress. The sprawling luxury villa is protected by heavy shoreline patrols.",
+        "Meat Packing Plant": "Slick industrial processing floors surrounded by rows of hanging carcasses. The humming refrigeration lines distort communication frequencies.",
+        "Import-Export": "A dense commercial warehouse packed to the ceiling with shipping crates, custom logs, and unregistered tactical goods.",
+        "Penthouse": "An opulent, high-rise residential flat overlooking the city line. Glass architectural fixtures leave little choice but high-velocity direct engagements.",
+        "Banking House": "Alarms are blaring across the financial plaza. A high-stakes heist has shifted into a volatile hostage standoff, with heavily armed professionals treating the main reinforced vault as an unassailable fortress.",
+        "Meat Packing Plant 2": "The deep-freeze storage grid of the processing facility. Sub-zero environments threaten device batteries, and frozen surfaces challenge quick maneuvers.",
+        "Island Estate 2": "The isolated guest compound and private helipad network. Hostiles have locked down the surrounding tree lines with tripwires.",
+        "Garage": "Slick showroom floors and pristine, high-end luxury vehicles are caught directly in the crossfire. Heavily armed suspects have barricaded the car dealership exits, preparing for a bloody final stand.",
+        "Parade Line-up": "Abandoned celebratory floats sit dead along the empty main avenue. What was a public festival has quickly inverted into an open-air ambush grid.",
+        "Alley Strike": "Debris-strewn commercial alleys behind the retail quarter. Tight brick choke points force point-blank weapon transitions.",
+        "Ancient Temple": "Centuries-old stone corridors echo with the deafening cracks of modern rifles. Fanatics have occupied these sacred archaeological ruins, using vertical high ground and forgotten architectural bottlenecks to ambush intruders.",
+        "Chapel": "Sacred ground has been broken. Radicalized terrorists have taken over the historic church, utilizing the elevated choir lofts, ancient stone arches, and shadowed nave as heavily fortified sniper vantage points behind stained glass.",
+        "Firehouse": "Emergency first responders are trapped inside their own headquarters. Armed suspects have barricaded themselves deep inside the bay doors, converting heavy fire engines and ladder trucks into makeshift tactical barriers.",
+        "The Mall": "Shattered glass ceilings and abandoned retail stalls clutter a multi-level department hub. Distorting echoes make tracking footsteps highly unreliable.",
+        "Convenience Store": "Flickering fluorescent tubes buzz over tight commercial aisles. A routine local stop has rapidly escalated into an active suspect containment crisis.",
+        "Back Alley": "Unlit industrial access paths running behind the primary blocks. Shadows offer superb concealed navigation options if you clear corners cleanly.",
+        "Chemical Zero": "An unmapped biochemical laboratory installation. Highly volatile containment vessels require pinpoint target discrimination to prevent a localized bio-leak.",
+        "The Compound": "An eerie, dead quiet hangs over this remote, heavily fortified base. Do not let the lack of movement fool you; seasoned hostiles are dug into deep defensive lines behind sandbags, motion sensors, and reinforced steel doors.",
+        "Disgruntled Customers": "An administrative corporate support floor taken over by hostiles. Radicalized actors have cornered the operational staff within an intricate desk maze.",
+        "Desal": "A massive utility plant vital to regional water infrastructure. Saboteurs have targeted the primary processing control valves.",
+        "Quartier General": "A heavily fortified urban intelligence sector. Advanced reinforced doors and localized security hubs make an unannounced breach extremely difficult.",
+        "Quartier General 2": "The underground server cluster and backup tactical floor. Target forces are actively attempting data purges; speed is paramount.",
+        "El Diablo's Club": "The bass is pounding hard enough to shake the walls, and neon strobes blind your entry sightlines. This cartel-owned dance club is a structural meat-grinder filled with frantic VIP lounges, strobe hazards, and hidden money vaults.",
+        "Emergency Room": "A place of healing is now a high-velocity tactical zone. Terrorists have seized the hospital wings, weaponizing medical infrastructure, cutting primary power, and threatening highly vulnerable patients.",
+        "Falling Rain": "A torrential downpour hammers the concrete yards. Sound profiles are completely masked by the storm, limiting audio detection capabilities.",
+        "Garage (Dark)": "An automotive repair workshop completely cut from the electrical grid. Night vision arrays or high-intensity weapon lights are mandatory.",
+        "Down the Rabbit Hole": "A multi-layered subterranean tunnel system tracking deep below. It is incredibly easy to lose positional orientation in these stone shafts.",
+        "Water Treatment Facility": "Massive settling pools and loud processing pumps define this layout. Falling off the narrow access cat-walks means immediate operational failure.",
+        "Water Treatment Facility 2": "The subterranean valve junctions and main distribution pipes. Highly damp, claustrophobic settings with ringing echo profiles.",
+        "Heat": "An isolated desert outpost baked under an intense sun. Mirage distortion complicates long-range optic verification over the sand flats.",
+        "IG Embassy": "An international diplomatic complex under active assault. Extreme precision is required to neutralize threats without creating international incidents.",
+        "IG Canals of Venice": "Narrow stone paths running alongside deep waterways. Enemy elements are using historic archways and boat slips to form interlocking fields of fire.",
+        "Import Export (Dark)": "The primary shipping floor plunged into midnight darkness. Towering container stacks cast immense shadows, perfect for an unexposed threat.",
+        "Island Estate Night": "The tropical beachfront villa under midnight conditions. Infiltrate via the dark surf line and sweep the dark exterior gardens.",
+        "Metropolitan Library": "Grand multi-tier reference rooms and long rows of tall archives. Heavy wooden structures provide solid ballistic cover but block exit lanes.",
+        "Made of Stone": "An old brutalist concrete monolith or rock quarry. Ballistic cover is absolute, but ricochet trajectories pose a severe risk.",
+        "Cinema": "An abandoned theater house. The main projector seating arena is pitched in darkness, offering hundreds of hidden firing positions.",
+        "Norad": "Deep beneath the surface, an unsettling silence fills the multi-level subterranean parking garage. A credible, active bomb threat has been reported inside, turning every parked vehicle into a potential claymore hazard.",
+        "Parade (Dark)": "The festive avenue after hours. Inoperative float displays cast long, strange silhouettes across the vacated commercial strip.",
+        "Playground": "An abandoned urban park setting. The rusting equipment serves as a grim backdrop for an ongoing urban defensive standoff.",
+        "Port Town": "Coastal fog rolls heavy over the docks as freezing waves slam against the hulls. Smugglers and rogue cells are utilizing the labyrinth of rusted shipping crates and seaside alleys to move contraband under the cover of night.",
+        "Factory": "Heavy assembly infrastructure currently in a state of sudden shutdown. Exposed electrical hazards and steam vents limit movement choices.",
+        "Black Star": "A heavily classified private tactical site. Expect highly trained corporate contractors carrying advanced military-grade hardware.",
+        "Residential Trauma": "A pristine, quiet suburban neighborhood is paralyzed by an eerie, unknown threat. Reports of strange bio-hazards or domestic extremist activity loom heavily behind the closed doors of these cookie-cutter family homes.",
+        "Weapon Deal": "An illicit black-market armaments hand-off caught mid-transaction. The layout is dangerously crowded with explosive munitions boxes.",
+        "Rich": "An upscale residential mansion featuring highly complex, multi-tiered architecture and long interior sightlines.",
+        "Rich 2": "An adjoining estate within the high-class district. Elaborate stone courtyard walls and dense hedges create a confusing exterior maze.",
+        "Modern Office": "Fluorescent lights flicker frantically over shattered glass and corporate wreckage. Active shooters are systematically moving floor-by-floor through a complex maze of open cubicles and executive suites.",
+        "Modern Office 2": "The city skyline glows vividly outside, but inside the tower, darkness reigns supreme. A brutal night-shift assault has transformed this corporate high-rise into a pitch-black, high-stakes tactical hunting ground.",
+        "Spa": "A luxurious hillside estate masking dark secrets. This sprawling, opulent mansion features multi-level steam rooms, infinity pools, and winding hidden escape tunnels utilized by high-ranking terror cell leadership.",
+        "London Wharf": "A foam-blanketed maritime loading dock in the industrial shipping sector. Slick conditions and blind container corners challenge visibility.",
+        "Chalet Fall": "A grand ski resort structurally damaged following a sudden explosive breach. Unstable debris piles alter traditional entry lanes.",
+        "Art Museum": "Priceless relics and ancient marble statues stand as silent witnesses to the tension. Terrorists are hiding deep within the modern art exhibits, callously utilizing invaluable cultural masterpieces as ballistic shields.",
+        "Oil Tanker": "A massive oceanic transport vessel. Narrow steel companionways, vertical ladders, and tight crew compartments demand aggressive room clearing.",
+        "Shopping Spree": "An upscale commercial retail strip locked down by emergency orders. Fragile boutique windows offer zero protection from incoming fire.",
+        "Locked Up": "The tables have completely turned. Inmates have executed a brutal, coordinated takeover of the high-security cell blocks, weaponizing stolen riot gear and guard equipment within a claustrophobic concrete maze.",
+        "Trailer Park": "A tightly clustered residential loop. Thin structure walls provide no reliable ballistic protection against incoming rifle fire.",
+        "Transport": "A disabled tactical supply convoy stopped dead on an open highway. Exposed asphalt forces rapid movement between vehicle hulls.",
+        "Flynn's Arcade": "8-bit chiptunes sound incredibly eerie ringing out in the pitch dark. Terrorists have overtaken this classic retro gaming hub, utilizing bulky arcade cabinets and ticket counters as heavy tactical cover.",
+        "Vice Bar": "Retro synthwave music still loops eerily as suspects barricade themselves behind neon-lit liquor counters. Expect shattered glass, blind corners, narrow hallways, and frantic, close-quarters firefights.",
+        "Village": "An old-world rural layout defined by stone residences and dirt paths. Multiple windows create countless potential sniper lines.",
+        "Village Snow": "The same rural settlement bogged down under heavy winter snowfall. Loud footfalls on frozen patches hinder silent approaches.",
+        "Bowling Alley": "The familiar sounds of crashing pins have been replaced by tactical gunfire. Suspects are dug in deep across the lanes, using bowling ball returns, shoe counters, and neon lounge seating as cover.",
+        "Weapons Cache": "An underground cell storage depot crammed with illegal ordnance. Stray rounds could set off an immediate chain reaction.",
+        "White Oak": "A massive, secluded modern estate has become a high-value target raid. Breach teams must navigate the sprawling, minimalist hallways and floor-to-ceiling glass walls of this wealthy, isolated forest fortress.",
+        "UnderWorld": "A surreal, deeply unsettling psychological landscape hidden deep within the Nevada desert. This classified underground terrorist bunker features an uncanny, artificial outdoor simulation built entirely indoors to disorient intruders.",
+        "Underworld 2": "An extended tier of the Nevada simulation grid, featuring an artificial night sky array and simulated canyon paths built deep underground.",
+        "Embassy": "A sovereign diplomatic outpost placed on emergency containment lockdown. Hostiles have reinforced the main administrative check-desks.",
+        "Agora Market": "A sun-baked Middle Eastern marketplace has instantly transformed into a chaotic warzone. Sprawling alleys, dense canvas merchant stalls, and overhead rooftops provide endless blind corners and perfect concealment for hiding insurgents.",
+        "A Castle in Milan": "An ancient European stronghold complete with massive stone ramparts, grand halls, and defensive battlements.",
+        "Luxury Hotel": "A five-star resort tower featuring expansive ground lobbies, open escalators, and long residential hallways lined with uniform doors.",
+        "Luxury Hotel Night": "The premium hotel layout under night conditions. Failing emergency lights create a highly irregular visibility grid across the rooms.",
+        "Old City": "Dense historical housing quarters divided by winding cobblestone passages. The erratic layout challenges traditional tactical planning.",
+        "Street's of Milan": "Narrow urban transit lines bordered by classic Italian masonry. Abandoned civilian vehicles create unpredictable cover configurations.",
+        "Italian Warehouse": "Intel confirms a high-intensity raid on a strategic military base supply facility. This Mediterranean depot is tightly packed with stolen heavy ordnance, vehicles, and experimental weapons armor.",
+        "Warehouse Night": "The supply facility shrouded in midnight darkness. Close-quarters pieing techniques are critical to clear dark pallet rows.",
+        "Siberian Base": "A forgotten military installations locked deep within the frozen tundra. Fierce winds heavily penalize exterior long-range accuracy.",
+        "Subway Station": "An underground metropolitan rail center. Structural pillars offer solid cover, but the open track lines represent absolute kill zones.",
+        "Cold Thunder": "An industrial manufacturing complex caught in a severe electrical storm. Thunderclaps completely mask loud kinetic breaches.",
+        "Docks": "Weathered piers and old storage offices running along a saltwater front. Tight exterior pathways offer little room to maneuver.",
+        "Iron Comet": "A subterranean hardened bunker engineered to withstand nuclear strikes. Extremely thick blast doors limit directional movement options.",
+        "Kilment Ohridski University": "A massive historic educational campus. Multi-level lecture halls and expansive libraries have been converted into defensive redoubts.",
+        "Little Wing": "An isolated auxiliary airfield radar base. Wide, open runway access forces teams to execute swift, aggressive entry techniques.",
+        "Military Installation": "A highly functional modern operations base. Expect disciplined threat actors operating behind active defensive barriers.",
+        "Nuclear Reactor": "The sensitive control chambers of a functional atomic plant. Errant weapon deployment runs the immediate risk of reactor destabilization.",
+        "Safe House": "A suburban residential shell containing covert intelligence safe rooms, reinforced panic doors, and hidden exit ways.",
+        "Storage Facility": "A commercial grid of identical roll-up metal bay doors. Ambush variables are incredibly high across these narrow lanes.",
+        "Training Camp": "A makeshift training center constructed by hostiles. Simulated obstacle fields and firing tracks are now fully live fire areas."
+    };
+
+    const objectiveComplications = {
+        "Terrorist Hunt": "THE HOSTILES ARE DUG IN DEEP AND EXPECTING A FIGHT. EXECUTE SYSTEMATIC ROOM CLEARING BEFORE REINFORCEMENTS INTERCEPT.",
+        "Hostage Rescue": "INTELLIGENCE CONFIRMS TARGETS ARE LOCATED IN THE CENTRAL SECTOR. SEIZE INITIATIVE AND SECURE CIVILIANS SILENTLY.",
+        "Lone Wolf": "THE LZ IS ISOLATED AND NO BACKUP IS AVAILABLE. YOU ARE COMPLETELY INDEPENDENT. ENGAGE AT YOUR OWN DISCRETION.",
+        "Stealth Wolf": "THE AREA IS RIGGED WITH TRIPWIRES AND SECURITY NETWORK LINKS. TRIPPING ALARMS RESULTS IN IMMEDIATE MISSION FAILURE.",
+        "Stealth Hunt": "NEUTRALIZE THREATS INDIVIDUALLY WITHOUT BREAKING PERIMETER STEALTH. DO NOT ALLOW PATROLS TO LOCATE DOWNED HOSTILES."
+    };
+
+    let campaign = [];
+    let currentStep = 0;
+
+    function getRandomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function generateNarrative(map, mode) {
+        const hook = customMapNarratives[map] || "Intel on this sector is limited. Proceed with extreme caution and expect heavy resistance upon breach.";
+        return `${hook}<br><br><span class="label">> COMPLICATION:</span> <span style="color: var(--text-light);">${objectiveComplications[mode.name]}</span><br><br>TACTICAL BREACH SEQUENCE ENGAGED AT <strong>${map.toUpperCase()}</strong>.`;
+    }
+
+    function initCampaign(length) {
+        campaign = [];
+        currentStep = 0;
+        for(let i=0; i<length; i++) {
+            let map = getRandomItem(maps);
+            let mode = getRandomItem(modes);
+            campaign.push({ map, mode, intro: generateNarrative(map, mode) });
+        }
+        document.getElementById('setup-view').classList.add('hidden');
+        document.getElementById('mission-view').classList.remove('hidden');
+        showMission();
+    }
+
+    function showMission() {
+        const m = campaign[currentStep];
+        document.getElementById('mission-header').innerText = `TACTICAL DOSSIER: PHASE ${currentStep + 1} OF ${campaign.length}`;
+        document.getElementById('map-disp').innerText = m.map;
+        document.getElementById('mode-disp').innerText = m.mode.name;
+        document.getElementById('mode-desc').innerText = m.mode.desc.toUpperCase();
+        document.getElementById('story-disp').innerHTML = m.intro;
+    }
+
+    function rerollMission() {
+        let newMap = getRandomItem(maps);
+        let newMode = getRandomItem(modes);
+        campaign[currentStep] = { map: newMap, mode: newMode, intro: generateNarrative(newMap, newMode) };
+        showMission();
+    }
+
+    function nextMission() {
+        currentStep++;
+        if(currentStep >= campaign.length) endCampaign(true);
+        else showMission();
+    }
+
+    function endCampaign(success) {
+        document.getElementById('mission-view').classList.add('hidden');
+        document.getElementById('end-view').classList.remove('hidden');
+        const status = document.getElementById('end-status');
+        const story = document.getElementById('end-story');
+        if(success) {
+            status.innerText = "OPERATION: DEBRIEF COMPLETE";
+            status.style.color = "var(--success)";
+            story.innerText = "ALL OPERATIONAL TARGETS SECURED. CRISIS MITIGATED WITH MINIMAL COLLATERAL IMPACT. LOGGING LOGISTICAL DATA INTO THE RAINBOW DATABASES.";
+        } else {
+            status.innerText = "OPERATION: COMPROMISED / MISSION FAILED";
+            status.style.color = "var(--fail)";
+            story.innerText = "RAINBOW CELL TOOK CRITICAL LOSSES. MISSION THRESHOLD EXCEEDED. TACTICAL RETREAT RE-ROUTE CODE REQUIRED.";
+        }
+    }
+</script>
+</body>
+</html>
