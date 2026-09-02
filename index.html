@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAVEN SHIELD: Tactical Campaign Generator</title>
+    <title>RAVEN SHIELD: Tactical Operations Map</title>
     <style>
         :root {
             --bg: #090b0e;
@@ -11,6 +11,7 @@
             --panel-light: #1a202c;
             --accent: #ff3b3b;
             --accent-dim: #a31c1c;
+            --accent-glow: rgba(255, 59, 59, 0.4);
             --text: #cbd5e1;
             --text-light: #f8fafc;
             --text-dark: #64748b;
@@ -18,9 +19,103 @@
             --success: #10b981;
             --fail: #f43f5e;
             --info: #38bdf8;
+            --warning: #f59e0b;
             --radius: 8px;
+
+            /* Region Colors */
+            --urban-color: #38bdf8;
+            --mountain-color: #e2e8f0;
+            --coastal-color: #06b6d4;
+            --industrial-color: #f59e0b;
         }
-        
+
+        /* --- THEMES --- */
+        body.theme-nightvision {
+            --bg: #020d04;
+            --panel: #061809;
+            --panel-light: #0b2610;
+            --accent: #10b981;
+            --accent-dim: #047857;
+            --accent-glow: rgba(16, 185, 129, 0.4);
+            --border: #133a18;
+            --urban-color: #34d399;
+            --mountain-color: #a7f3d0;
+            --coastal-color: #059669;
+            --industrial-color: #10b981;
+        }
+
+        body.theme-arctic {
+            --bg: #0b131e;
+            --panel: #111c2e;
+            --panel-light: #182840;
+            --accent: #38bdf8;
+            --accent-dim: #0284c7;
+            --accent-glow: rgba(56, 189, 248, 0.4);
+            --border: #1e3a5f;
+            --urban-color: #7dd3fc;
+            --mountain-color: #f1f5f9;
+            --coastal-color: #0284c7;
+            --industrial-color: #38bdf8;
+        }
+
+        body.theme-desert {
+            --bg: #140d07;
+            --panel: #24160a;
+            --panel-light: #331f0e;
+            --accent: #f59e0b;
+            --accent-dim: #b45309;
+            --accent-glow: rgba(245, 158, 11, 0.4);
+            --border: #422912;
+            --urban-color: #fbbf24;
+            --mountain-color: #fef3c7;
+            --coastal-color: #d97706;
+            --industrial-color: #f59e0b;
+        }
+
+        body.theme-cyberpunk {
+            --bg: #0f051d;
+            --panel: #1a0b2e;
+            --panel-light: #281245;
+            --accent: #f000ff;
+            --accent-dim: #8b0094;
+            --accent-glow: rgba(240, 0, 255, 0.4);
+            --border: #471b75;
+            --urban-color: #00ffff;
+            --mountain-color: #ff7700;
+            --coastal-color: #00ffaa;
+            --industrial-color: #f000ff;
+        }
+
+        body.theme-stealth {
+            --bg: #000000;
+            --panel: #0d0d0d;
+            --panel-light: #171717;
+            --accent: #e2e8f0;
+            --accent-dim: #64748b;
+            --accent-glow: rgba(255, 255, 255, 0.2);
+            --border: #262626;
+            --urban-color: #94a3b8;
+            --mountain-color: #cbd5e1;
+            --coastal-color: #64748b;
+            --industrial-color: #475569;
+        }
+
+        body.theme-redalert {
+            --bg: #1a0303;
+            --panel: #2b0808;
+            --panel-light: #400d0d;
+            --accent: #ff1100;
+            --accent-dim: #990a00;
+            --accent-glow: rgba(255, 17, 0, 0.5);
+            --border: #5e1313;
+            --urban-color: #ff6655;
+            --mountain-color: #ffaaa0;
+            --coastal-color: #cc2200;
+            --industrial-color: #ff9900;
+        }
+
+        * { box-sizing: border-box; }
+
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg); 
@@ -31,130 +126,459 @@
             min-height: 100vh;
             padding: 20px; 
             margin: 0;
-            box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        /* Ambient scanlines overlay */
+        /* Tactical CRT Scanlines Animation */
         body::before {
             content: " ";
             display: block;
             position: fixed;
             top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
             z-index: 99999;
-            opacity: 0.3;
+            opacity: 0.35;
             pointer-events: none;
             background-size: 100% 4px;
+            animation: scanlineFlicker 0.15s infinite alternate;
+        }
+
+        @keyframes scanlineFlicker {
+            0% { opacity: 0.32; }
+            100% { opacity: 0.38; }
         }
 
         .app-container { 
-            max-width: 780px; 
+            max-width: 1240px; 
             width: 100%; 
             background: var(--panel); 
             border: 1px solid var(--border);
             border-top: 4px solid var(--accent);
             border-radius: var(--radius);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(255, 59, 59, 0.03); 
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 0, 0, 0.5); 
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
-        /* Tactical Header Graphic Element */
+        /* --- VISUAL CANDY & ANIMATIONS --- */
+        @keyframes dopamineGain {
+            0% { opacity: 0; transform: translate(-50%, 20px) scale(0.6); }
+            15% { opacity: 1; transform: translate(-50%, -10px) scale(1.3); }
+            75% { opacity: 1; transform: translate(-50%, -35px) scale(1.1); }
+            100% { opacity: 0; transform: translate(-50%, -60px) scale(0.9); }
+        }
+
+        .money-pop {
+            position: fixed;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Arial Black', sans-serif;
+            font-size: 2.8rem;
+            color: #10b981;
+            text-shadow: 0 0 25px rgba(16, 185, 129, 0.9), 3px 3px 0px #000;
+            pointer-events: none;
+            z-index: 100000;
+            animation: dopamineGain 1.8s ease-out forwards;
+        }
+
+        /* RED SPENDING ANIMATION */
+        @keyframes spendDopamine {
+            0% { opacity: 0; transform: translate(-50%, -20px) scale(0.8); }
+            20% { opacity: 1; transform: translate(-50%, -40px) scale(1.2); }
+            80% { opacity: 1; transform: translate(-50%, -70px) scale(1.0); }
+            100% { opacity: 0; transform: translate(-50%, -100px) scale(0.8); }
+        }
+
+        .money-spend-pop {
+            position: fixed;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Arial Black', sans-serif;
+            font-size: 2.8rem;
+            color: #f43f5e;
+            text-shadow: 0 0 25px rgba(244, 63, 94, 0.9), 3px 3px 0px #000;
+            pointer-events: none;
+            z-index: 100000;
+            animation: spendDopamine 1.8s ease-out forwards;
+        }
+
+        @keyframes squadWinPop {
+            0% { opacity: 0; transform: translate(-50%, -20px) scale(0.5); filter: brightness(2); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.25); filter: brightness(1.2); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
+            100% { opacity: 0; transform: translate(-50%, -80%) scale(0.8); }
+        }
+
+        .win-pop {
+            position: fixed;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Arial Black', sans-serif;
+            font-size: 2.5rem;
+            color: #10b981;
+            text-shadow: 0 0 35px rgba(16, 185, 129, 0.9), 4px 4px 0px #000;
+            pointer-events: none;
+            z-index: 100000;
+            text-align: center;
+            animation: squadWinPop 2s ease-out forwards;
+            background: rgba(0, 20, 10, 0.85);
+            padding: 20px 40px;
+            border: 2px solid #10b981;
+            border-radius: 12px;
+            box-shadow: 0 0 50px rgba(16, 185, 129, 0.5);
+        }
+
+        @keyframes lossShake {
+            0%, 100% { transform: translate(0, 0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-10px, 5px); }
+            20%, 40%, 60%, 80% { transform: translate(10px, -5px); }
+        }
+
+        @keyframes casualtyDrop {
+            0% { opacity: 0; transform: translate(-50%, -30px) scale(0.7); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -80%) scale(0.8); }
+        }
+
+        .loss-flash {
+            animation: lossShake 0.5s ease-in-out;
+        }
+
+        .loss-pop {
+            position: fixed;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Arial Black', sans-serif;
+            font-size: 2.3rem;
+            color: #f43f5e;
+            text-shadow: 0 0 25px rgba(244, 63, 94, 0.9), 3px 3px 0px #000;
+            pointer-events: none;
+            z-index: 100000;
+            text-align: center;
+            animation: casualtyDrop 2s ease-out forwards;
+            background: rgba(30, 0, 5, 0.85);
+            padding: 20px 40px;
+            border: 2px solid #f43f5e;
+            border-radius: 12px;
+            box-shadow: 0 0 50px rgba(244, 63, 94, 0.5);
+        }
+
         .banner-header {
             width: 100%;
-            height: 120px;
-            background: linear-gradient(135deg, #0e1118, rgba(163, 28, 28, 0.12));
+            padding: 16px 25px;
+            background: rgba(0,0,0,0.4);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            padding: 0 30px;
-            box-sizing: border-box;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
         .banner-title {
             font-family: 'Arial Black', -apple-system, sans-serif;
             font-weight: 900;
-            font-size: 1.8rem;
+            font-size: 1.3rem;
             color: var(--text-light);
             letter-spacing: 1px;
             text-transform: uppercase;
-            text-shadow: 2px 2px 0px rgba(163, 28, 28, 0.5);
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.8);
             margin: 0;
-        }
-
-        .content-padding {
-            padding: 30px;
-        }
-
-        h2 { 
-            font-family: 'Arial Black', -apple-system, sans-serif;
-            font-weight: 900;
-            border-bottom: 1px solid var(--border); 
-            padding-bottom: 12px; 
-            color: var(--text-light); 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-            font-size: 1.25rem;
-            margin-top: 0;
-            margin-bottom: 20px;
             display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title-badge {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent);
+            animation: pulse-ring 1.5s infinite;
+        }
+
+        .status-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.78rem;
+            padding: 6px 12px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--accent-dim);
+            color: var(--accent);
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .content-area {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .setup-box {
+            text-align: center;
+            padding: 25px 20px;
+        }
+
+        /* --- TABBED UI FOR ARMORY --- */
+        .armory-tabs-nav {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 15px 0 25px 0;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            color: var(--text-dark);
+            padding: 10px 22px;
+            font-family: 'Consolas', monospace;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-radius: var(--radius);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-light);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--text-dark);
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            background: var(--accent);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .map-viewport {
+            position: relative;
+            width: 100%;
+            height: 520px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.9);
+        }
+
+        .map-svg-bg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .region-label {
+            position: absolute;
+            font-family: 'Consolas', monospace;
+            font-size: 0.7rem;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            background: rgba(9, 11, 14, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .rl-mountain { top: 12px; left: 12px; color: var(--mountain-color); border-color: var(--mountain-color); }
+        .rl-urban { top: 12px; right: 12px; color: var(--urban-color); border-color: var(--urban-color); }
+        .rl-coastal { bottom: 12px; left: 12px; color: var(--coastal-color); border-color: var(--coastal-color); }
+        .rl-industrial { bottom: 12px; right: 12px; color: var(--industrial-color); border-color: var(--industrial-color); }
+
+        .mission-node {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
             align-items: center;
         }
 
-        h2::before {
+        .node-pin {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--panel);
+            border: 2px solid var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px var(--accent-glow);
+            position: relative;
+        }
+
+        .node-pin::before {
             content: "";
-            display: inline-block;
-            width: 8px;
-            height: 16px;
+            width: 10px;
+            height: 10px;
             background: var(--accent);
-            margin-right: 12px;
-            border-radius: 2px;
-            animation: pulse 2s infinite;
+            border-radius: 50%;
         }
 
-        @keyframes pulse {
-            0% { opacity: 0.4; }
-            50% { opacity: 1; }
-            100% { opacity: 0.4; }
+        .node-ping {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 1px solid var(--accent);
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
         }
 
-        .hidden { display: none !important; }
+        .mission-node.under-attack .node-pin {
+            border-color: var(--warning);
+            background: #24160a;
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.9);
+            animation: pulse-attack 1s infinite alternate;
+        }
+        .mission-node.under-attack .node-pin::before {
+            background: var(--warning);
+        }
+        .mission-node.under-attack .node-ping {
+            border-color: var(--warning);
+        }
 
-        .briefing-text { 
-            line-height: 1.6; 
-            font-size: 0.95rem; 
-            color: var(--text); 
-            margin: 20px 0; 
-            background: rgba(9, 11, 14, 0.4);
+        @keyframes pulse-attack {
+            0% { transform: scale(1); box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+            100% { transform: scale(1.25); box-shadow: 0 0 30px rgba(245, 158, 11, 1); }
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); opacity: 0.9; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+
+        .node-details {
+            margin-top: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .node-label {
+            background: rgba(9, 11, 14, 0.92);
+            border: 1px solid var(--border);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.72rem;
+            color: var(--text-light);
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+        }
+
+        .node-timer {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+            font-family: 'Consolas', monospace;
+            font-size: 0.65rem;
+            font-weight: bold;
+            padding: 1px 6px;
+            border-radius: 3px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .node-timer.attacking {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: var(--accent);
+            color: #ff7777;
+        }
+
+        .mission-node:hover {
+            transform: translate(-50%, -50%) scale(1.15);
+            z-index: 30;
+        }
+
+        .mission-node:hover .node-label {
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .mission-node.active .node-pin {
+            background: var(--accent);
+            border-color: #fff;
+        }
+        .mission-node.active .node-pin::before { background: #fff; }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1.25fr 1fr;
+            }
+        }
+
+        .dossier-panel {
+            background: var(--panel-light);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 20px; 
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
-        .objective-box { 
-            background: var(--panel-light); 
-            padding: 5px 20px; 
-            border-left: 4px solid var(--accent); 
-            border-top: 1px solid var(--border);
-            border-right: 1px solid var(--border);
+        .dossier-header {
             border-bottom: 1px solid var(--border);
-            border-radius: 0 var(--radius) var(--radius) 0;
-            margin-bottom: 25px; 
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            font-family: 'Arial Black', sans-serif;
+            font-size: 1rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .objective-row {
             display: flex;
             flex-direction: column;
             border-bottom: 1px solid rgba(255,255,255,0.04);
-            padding: 12px 0;
-        }
-        .objective-row:last-child { border: none; }
-
-        @media (min-width: 600px) {
-            .objective-row {
-                flex-direction: row;
-                align-items: flex-start;
-            }
+            padding: 8px 0;
         }
 
         .label { 
@@ -162,206 +586,739 @@
             font-family: 'Consolas', 'Monaco', monospace;
             font-weight: bold; 
             text-transform: uppercase; 
-            font-size: 0.8rem; 
+            font-size: 0.75rem; 
             letter-spacing: 1px;
-            width: 180px;
-            flex-shrink: 0;
-            margin-bottom: 4px;
-        }
-
-        @media (min-width: 600px) {
-            .label { margin-bottom: 0; }
+            margin-bottom: 2px;
         }
 
         .value {
             color: var(--text-light);
             text-transform: uppercase;
             font-weight: 700;
-            font-size: 0.95rem;
+            font-size: 0.88rem;
             letter-spacing: 0.5px;
         }
 
-        .btn-group {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-            margin-top: 20px;
+        .briefing-text { 
+            line-height: 1.5; 
+            font-size: 0.82rem; 
+            color: var(--text); 
+            margin: 12px 0; 
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px; 
+            max-height: 160px;
+            overflow-y: auto;
         }
 
-        @media (min-width: 600px) {
-            .controls {
-                display: flex;
-                gap: 12px;
-                margin-top: 25px;
-            }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
         }
 
         .btn { 
-            padding: 12px 24px; 
+            padding: 12px 18px; 
             border: 1px solid var(--border); 
             border-radius: 6px;
-            background: var(--panel-light); 
+            background: var(--panel); 
             color: var(--text-light); 
             cursor: pointer; 
             text-transform: uppercase; 
             font-weight: bold; 
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-family: inherit;
             letter-spacing: 0.5px;
             transition: all 0.2s ease; 
-            width: 100%;
-        }
-
-        @media (min-width: 600px) {
-            .btn { width: auto; }
+            text-align: center;
         }
 
         .btn:hover { 
             background: var(--text-light); 
             color: #000; 
             border-color: #fff;
-            transform: translateY(-1px);
         }
 
-        .btn:active {
-            transform: translateY(0);
+        .btn-primary {
+            background: rgba(0,0,0,0.3);
+            border-color: var(--accent);
+            color: var(--text-light);
+        }
+        .btn-primary:hover {
+            background: var(--accent);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .btn-warning {
+            border-color: rgba(245, 158, 11, 0.4);
+            color: var(--warning);
+            background: rgba(245, 158, 11, 0.08);
+        }
+        .btn-warning:hover {
+            background: var(--warning);
+            color: #000;
+            border-color: var(--warning);
+        }
+
+        .btn-success { 
+            border-color: rgba(16, 185, 129, 0.4); 
+            color: var(--success); 
+            background: rgba(16, 185, 129, 0.08); 
+        }
+        .btn-success:hover { 
+            background: var(--success); 
+            color: #000; 
+            border-color: var(--success); 
+        }
+
+        .btn-fail { 
+            border-color: rgba(244, 63, 94, 0.4); 
+            color: var(--fail); 
+            background: rgba(244, 63, 94, 0.08); 
+        }
+        .btn-fail:hover { 
+            background: var(--fail); 
+            color: #000; 
+            border-color: var(--fail); 
         }
 
         .btn-setup {
             border-color: var(--border);
             color: var(--text);
             text-align: left;
-            padding: 18px 20px;
-            background: rgba(26, 32, 44, 0.5);
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
             justify-content: space-between;
             font-family: 'Consolas', 'Monaco', monospace;
+            margin-bottom: 10px;
         }
         .btn-setup:hover {
-            background: rgba(255, 59, 59, 0.05);
+            background: rgba(255, 255, 255, 0.05);
             color: var(--text-light);
             border-color: var(--accent);
             transform: translateX(4px);
         }
-        .btn-setup::after {
-            content: "→";
-            font-size: 1.1rem;
-            opacity: 0.7;
+
+        /* Operator & Weapon Control UI */
+        .operator-dispatch-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .btn-success { border-color: rgba(16, 185, 129, 0.4); color: var(--success); background: rgba(16, 185, 129, 0.04); }
-        .btn-success:hover { background: var(--success); color: #000; border-color: var(--success); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
-        
-        .btn-fail { border-color: rgba(244, 63, 94, 0.4); color: var(--fail); background: rgba(244, 63, 94, 0.04); }
-        .btn-fail:hover { background: var(--fail); color: #000; border-color: var(--fail); box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2); }
-        
-        .btn-info { border-color: rgba(56, 189, 248, 0.4); color: var(--info); background: rgba(56, 189, 248, 0.04); }
-        .btn-info:hover { background: var(--info); color: #000; border-color: var(--info); box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2); }
+        .control-section-title {
+            font-family: 'Consolas', monospace;
+            font-size: 0.72rem;
+            color: var(--info);
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 4px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 8px;
+        }
+
+        .stepper-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stepper-label {
+            font-family: 'Consolas', monospace;
+            font-size: 0.68rem;
+            color: var(--text-light);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stepper-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-step {
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+        .btn-step:hover {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+
+        .stepper-input {
+            flex: 1;
+            width: 100%;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--border);
+            color: var(--text-light);
+            text-align: center;
+            font-family: 'Consolas', monospace;
+            font-weight: bold;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            padding: 2px 0;
+        }
+
+        .probability-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin: 6px 0;
+        }
+
+        .probability-header {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Consolas', monospace;
+            font-size: 0.75rem;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        .prob-bar-bg {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .prob-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #f43f5e, #f59e0b, #10b981);
+            transition: width 0.3s ease;
+        }
+
+        .armory-status-card {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .armory-status-title {
+            font-family: 'Consolas', monospace;
+            font-size: 0.8rem;
+            color: var(--accent);
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 4px;
+        }
+
+        .armory-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+            font-size: 0.78rem;
+            font-family: 'Consolas', monospace;
+        }
+
+        .unlocks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .unlock-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .unlock-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+        }
+
+        .unlock-title {
+            font-family: 'Consolas', monospace;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .unlock-desc {
+            font-size: 0.75rem;
+            color: var(--text-dark);
+        }
+
+        /* --- BRANCHING CAMPAIGN (CHOOSE-YOUR-OWN-ADVENTURE) --- */
+        .branch-choice-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 700px) {
+            .branch-choice-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .branch-choice-card {
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .branch-choice-card:hover {
+            border-color: var(--accent);
+            background: rgba(0, 0, 0, 0.45);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .branch-choice-label {
+            font-family: 'Consolas', monospace;
+            font-weight: bold;
+            font-size: 0.82rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .branch-choice-region {
+            font-family: 'Consolas', monospace;
+            font-size: 0.68rem;
+            color: var(--text-dark);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .branch-choice-text {
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: var(--text);
+        }
+
+        .hidden { display: none !important; }
 
         .watermark {
             position: absolute;
-            bottom: 12px;
-            right: 20px;
+            bottom: 8px;
+            right: 15px;
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 0.65rem;
-            color: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.1);
             text-transform: uppercase;
             letter-spacing: 1.5px;
             pointer-events: none;
-            display: none;
         }
-        @media (min-width: 600px) { .watermark { display: block; } }
+
+        .tactical-icon {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
 
-<div class="app-container">
+<div class="app-container" id="app-container">
     <div class="banner-header">
-        <div class="banner-title">Rainbow Six 3: Campaign Generator</div>
-    </div>
-
-    <div class="content-padding">
-        <div id="setup-view">
-            <h2>MISSION CONTROL PANEL</h2>
-            <p style="color: var(--text-dark); margin-bottom: 25px; font-size: 0.95rem;">Select deployment parameters to initialize operational order:</p>
-            <div class="btn-group">
-                <button class="btn btn-setup" onclick="initCampaign(5)">[ 05 PHASES ] - SHORT TERM OPERATION</button>
-                <button class="btn btn-setup" onclick="initCampaign(7)">[ 07 PHASES ] - SUSTAINED CAMPAIGN</button>
-                <button class="btn btn-setup" onclick="initCampaign(10)">[ 10 PHASES ] - EXTENDED ASSIGNMENT</button>
-            </div>
+        <div class="banner-title">
+            <span class="title-badge"></span>
+            <span>Rainbow Six 3: Tactical Map</span>
         </div>
-
-        <div id="mission-view" class="hidden">
-            <h2 id="mission-header">TACTICAL DOSSIER: PHASE I</h2>
-            <div class="objective-box">
-                <div class="objective-row">
-                    <div class="label">> AREA OF OPERATION:</div>
-                    <div class="value" id="map-disp"></div>
-                </div>
-                <div class="objective-row">
-                    <div class="label">> EXPECTED ROE:</div>
-                    <div class="value" id="mode-disp"></div>
-                </div>
-                <div class="objective-row">
-                    <div class="label">> OBJECTIVE DETAILS:</div>
-                    <div id="mode-desc" style="font-size: 0.85rem; color: var(--text-dark); font-weight: 500; margin-top: 4px;"></div>
-                </div>
-            </div>
-            
-            <div style="font-family: 'Consolas', 'Monaco', monospace; font-size: 0.75rem; color: var(--accent); font-weight: bold; letter-spacing: 1px; margin-bottom: -10px;">[ FIELD INTEL BRIEFING ]</div>
-            <div id="story-disp" class="briefing-text"></div>
-            
-            <div class="controls">
-                <button class="btn btn-success" onclick="nextMission()">MISSION ACCOMPLISHED</button>
-                <button class="btn btn-info" onclick="rerollMission()">RE-ROUTE ASSIGNMENT</button>
-                <button class="btn btn-fail" onclick="endCampaign(false)">OPERATOR DOWN / KIA</button>
-            </div>
-        </div>
-
-        <div id="end-view" class="hidden">
-            <h1 id="end-status" style="font-family: 'Arial Black', sans-serif; font-weight:900; font-size: 1.8rem; letter-spacing: 0.5px; text-transform: uppercase; margin-top:0;"></h1>
-            <div id="end-story" class="briefing-text"></div>
-            <button class="btn" style="width:100%" onclick="location.reload()">RE-INITIALIZE NETCOM</button>
+        <div class="status-container">
+            <button id="btn-return-menu" class="btn btn-warning hidden" style="padding: 4px 10px; font-size: 0.72rem;" onclick="returnToMainMenu()">⚙️ CHANGE CAMPAIGN</button>
+            <div id="money-counter" class="status-badge hidden" style="border-color: var(--success); color: var(--success); background: rgba(16, 185, 129, 0.1);">MONEY: $500</div>
+            <div id="skin-points-counter" class="status-badge" style="border-color: #f000ff; color: #f000ff; background: rgba(240, 0, 255, 0.1);">SKIN PTS: 0 SP</div>
+            <div id="operators-counter" class="status-badge hidden" style="border-color: var(--info); color: var(--info);">OPERATORS: 0</div>
+            <div id="weapons-counter" class="status-badge hidden" style="border-color: var(--warning); color: var(--warning);">WEAPONS: 0 / 0</div>
+            <div id="day-counter" class="status-badge hidden">DAY: 01</div>
+            <div id="campaign-progress" class="status-badge hidden">DAYS: 0 / 0</div>
         </div>
     </div>
-    <div class="watermark">RAVEN SHIELD STYLED UI // DIRECTIVE 6</div>
+
+    <div class="content-area">
+        <!-- SETUP VIEW -->
+        <div id="setup-view" class="setup-box">
+            <h2 style="font-family: 'Arial Black', sans-serif; color: var(--text-light); text-transform: uppercase; margin-bottom: 5px;">SELECT CAMPAIGN MODE</h2>
+            <p style="color: var(--text-dark); margin-bottom: 25px; font-size: 0.95rem;">Choose your strategic command operational parameters:</p>
+            
+            <div style="max-width: 650px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px;">
+                <div style="border: 1px solid var(--border); padding: 18px; border-radius: var(--radius); background: rgba(0,0,0,0.2);">
+                    <div style="color: var(--accent); font-family: monospace; font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <svg class="tactical-icon" viewBox="0 0 24 24"><path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z"/></svg>
+                        STANDARD TACTICAL CAMPAIGN
+                    </div>
+                    <div style="color: var(--text-dark); font-size: 0.8rem; margin-bottom: 12px;">Standard turn-based tactical mission map. Execute direct manual infiltrations.</div>
+                    <button class="btn btn-setup" onclick="initMapCampaign('standard', 5)">[ 05 DAYS ] - SHORT TACTICAL THEATER</button>
+                    <button class="btn btn-setup" onclick="initMapCampaign('standard', 7)">[ 07 DAYS ] - SUSTAINED CAMPAIGN</button>
+                    <button class="btn btn-setup" onclick="initMapCampaign('standard', 10)">[ 10 DAYS ] - EXTENDED THEATER</button>
+                </div>
+
+                <div style="border: 1px solid var(--border); padding: 18px; border-radius: var(--radius); background: rgba(0,0,0,0.2);">
+                    <div style="color: var(--info); font-family: monospace; font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <svg class="tactical-icon" viewBox="0 0 24 24"><path d="M12 2L22 12L12 22L2 12Z"/></svg>
+                        BRANCHING CAMPAIGN MODE
+                    </div>
+                    <div style="color: var(--text-dark); font-size: 0.8rem; margin-bottom: 12px;">Choose-your-own-adventure operation. Report the outcome of each level, then pick the lead your squad follows next — every choice sends you to a new sector with its own briefing.</div>
+                    <button class="btn btn-setup" style="border-color: var(--info);" onclick="initBranchingCampaign(5)">[ 05 LEVELS ] - SHORT OPERATION</button>
+                    <button class="btn btn-setup" style="border-color: var(--info);" onclick="initBranchingCampaign(8)">[ 08 LEVELS ] - EXTENDED OPERATION</button>
+                    <button class="btn btn-setup" style="border-color: var(--info);" onclick="initBranchingCampaign(12)">[ 12 LEVELS ] - FULL CAMPAIGN</button>
+                </div>
+
+                <button class="btn btn-primary" style="width: 100%; border-color: #f000ff; color: #f000ff;" onclick="toggleUnlocksScreen()">[ OPEN INTERFACE SKINS SHOP ]</button>
+            </div>
+        </div>
+
+        <!-- INTERFACE SKINS SHOP -->
+        <div id="unlocks-view" class="hidden setup-box">
+            <h2 style="font-family: 'Arial Black', sans-serif; color: var(--text-light); text-transform: uppercase; margin-bottom: 5px;">INTERFACE SKINS</h2>
+            <p style="color: var(--text-dark); margin-bottom: 15px; font-size: 0.9rem;">Unlock and equip HUD themes using Skin Points earned from campaign victories.</p>
+
+            <div style="font-family: monospace; color: #f000ff; font-weight: bold; text-align: left; border-bottom: 1px solid var(--border); padding-bottom: 5px;">> INTERFACE SKINS (UNLOCKED WITH SKIN POINTS - EARNED FROM CAMPAIGN VICTORIES)</div>
+            <div class="unlocks-grid">
+                <div class="unlock-card">
+                    <div>
+                        <div class="unlock-title">RAVEN SHIELD</div>
+                        <div class="unlock-desc">Default tactical red interface.</div>
+                    </div>
+                    <button class="btn" onclick="applyTheme('')">EQUIP DEFAULT</button>
+                </div>
+                <div class="unlock-card">
+                    <div>
+                        <div class="unlock-title">NIGHT VISION</div>
+                        <div class="unlock-desc">Phosphor green night operation HUD.</div>
+                    </div>
+                    <button class="btn btn-primary" id="btn-unlock-nightvision" onclick="unlockItem('theme-nightvision', 250)">UNLOCK (250 SP)</button>
+                </div>
+                <div class="unlock-card">
+                    <div>
+                        <div class="unlock-title">ARCTIC FROST</div>
+                        <div class="unlock-desc">Sub-zero blue intelligence grid.</div>
+                    </div>
+                    <button class="btn btn-primary" id="btn-unlock-arctic" onclick="unlockItem('theme-arctic', 500)">UNLOCK (500 SP)</button>
+                </div>
+                <div class="unlock-card">
+                    <div>
+                        <div class="unlock-title">DESERT MATRIX</div>
+                        <div class="unlock-desc">Amber gold command quadrant.</div>
+                    </div>
+                    <button class="btn btn-primary" id="btn-unlock-desert" onclick="unlockItem('theme-desert', 750)">UNLOCK (750 SP)</button>
+                </div>
+                <div class="unlock-card">
+                    <div>
+                        <div class="unlock-title">CYBERPUNK NEON</div>
+                        <div class="unlock-desc">Vibrant synthwave magenta display.</div>
+                    </div>
+                    <button class="btn btn-primary" id="btn-unlock-cyberpunk" onclick="unlockItem('theme-cyberpunk', 1200)">UNLOCK (1200 SP)</button>
+                </div>
+                <div class="unlock-card">
+                    <div>
+                        <div class="unlock-title">STEALTH MONOCHROME</div>
+                        <div class="unlock-desc">High-contrast stealth operations interface.</div>
+                    </div>
+                    <button class="btn btn-primary" id="btn-unlock-stealth" onclick="unlockItem('theme-stealth', 1800)">UNLOCK (1800 SP)</button>
+                </div>
+                <div class="unlock-card">
+                    <div>
+                        <div class="unlock-title">RED ALERT DEFCON-1</div>
+                        <div class="unlock-desc">Maximum danger alert theme.</div>
+                    </div>
+                    <button class="btn btn-primary" id="btn-unlock-redalert" onclick="unlockItem('theme-redalert', 2500)">UNLOCK (2500 SP)</button>
+                </div>
+            </div>
+
+            <!-- RESET DATA BUTTON -->
+            <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-fail" onclick="resetProgressAndUnlocks()">⚠️ RESET ALL PROGRESS & SKINS</button>
+                <button class="btn btn-warning" onclick="toggleUnlocksScreen()">RETURN TO COMMAND SCREEN</button>
+            </div>
+        </div>
+
+        <!-- MAP VIEW -->
+        <div id="map-view" class="dashboard-grid hidden">
+            <div class="map-viewport" id="map-viewport">
+                <svg class="map-svg-bg" viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="rgba(0,0,0,0.2)" />
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+                    
+                    <line x1="400" y1="0" x2="400" y2="520" stroke="rgba(255,255,255,0.08)" stroke-dasharray="6,6" stroke-width="2"/>
+                    <line x1="0" y1="260" x2="800" y2="260" stroke="rgba(255,255,255,0.08)" stroke-dasharray="6,6" stroke-width="2"/>
+                    
+                    <path d="M 30,220 L 90,130 L 140,170 L 220,70 L 290,140 L 370,50 L 390,240 Z" fill="rgba(255,255,255, 0.02)" stroke="var(--mountain-color)" stroke-opacity="0.3" stroke-width="1.5"/>
+                    <text x="50" y="80" fill="var(--mountain-color)" opacity="0.2" font-family="monospace" font-size="28" font-weight="bold">▲ MOUNTAINS</text>
+
+                    <rect x="430" y="30" width="340" height="200" fill="rgba(255,255,255, 0.01)" stroke="var(--urban-color)" stroke-opacity="0.3" stroke-width="1.5" stroke-dasharray="4,4"/>
+                    <text x="460" y="80" fill="var(--urban-color)" opacity="0.2" font-family="monospace" font-size="28" font-weight="bold">█ URBAN DISTRICT</text>
+
+                    <path d="M 0,320 C 120,310 180,410 260,390 C 320,370 340,480 400,520 L 0,520 Z" fill="rgba(255,255,255, 0.02)" stroke="var(--coastal-color)" stroke-opacity="0.3" stroke-width="1.5"/>
+                    <text x="40" y="470" fill="var(--coastal-color)" opacity="0.2" font-family="monospace" font-size="28" font-weight="bold">≈ COASTAL ZONE</text>
+
+                    <polygon points="440,290 560,290 620,350 760,350 760,490 440,490" fill="rgba(255,255,255, 0.01)" stroke="var(--industrial-color)" stroke-opacity="0.3" stroke-width="1.5"/>
+                    <text x="460" y="470" fill="var(--industrial-color)" opacity="0.2" font-family="monospace" font-size="28" font-weight="bold">⚙ INDUSTRIAL</text>
+                </svg>
+
+                <div class="region-label rl-mountain">▲ NW // MOUNTAIN SECTOR</div>
+                <div class="region-label rl-urban">█ NE // URBAN DISTRICT</div>
+                <div class="region-label rl-coastal">≈ SW // COASTAL & MARITIME</div>
+                <div class="region-label rl-industrial">⚙ SE // INDUSTRIAL OUTPOST</div>
+
+                <div id="nodes-container"></div>
+            </div>
+
+            <div class="dossier-panel">
+                <div>
+                    <div class="dossier-header">
+                        <span>TARGET DOSSIER</span>
+                        <span id="dossier-node-id" style="color: var(--accent); font-family: monospace;">#NONE</span>
+                    </div>
+
+                    <div id="dossier-content">
+                        <p style="color: var(--text-dark); font-size: 0.85rem; text-align: center; margin: 40px 0;">
+                            > SELECT AN ACTIVE MISSION NODE ON THE MAP TO INSPECT INTEL
+                        </p>
+                    </div>
+                </div>
+
+                <div>
+                    <div id="dossier-actions" class="btn-group hidden">
+                        <!-- Operator & Weapon Selection Control -->
+                        <div id="operator-dispatch-panel" class="operator-dispatch-card hidden">
+                            <!-- OPERATOR PICKER -->
+                            <div class="control-section-title">
+                                <span>1. ASSIGN SQUAD OPERATORS</span>
+                                <span id="avail-operators-indicator" style="color:var(--text-light);">AVAIL: 0</span>
+                            </div>
+                            <div class="control-grid">
+                                <div class="stepper-item">
+                                    <div class="stepper-label">
+                                        <span>RECRUIT</span>
+                                        <span id="avail-recruits" style="color:var(--text-dark);">0</span>
+                                    </div>
+                                    <div class="stepper-controls">
+                                        <button class="btn-step" onclick="adjustQty('inp-recruits', -1)">-</button>
+                                        <input type="text" id="inp-recruits" class="stepper-input" value="0" readonly>
+                                        <button class="btn-step" onclick="adjustQty('inp-recruits', 1)">+</button>
+                                    </div>
+                                </div>
+                                <div class="stepper-item">
+                                    <div class="stepper-label">
+                                        <span>OPERATIVE</span>
+                                        <span id="avail-operatives" style="color:var(--text-dark);">0</span>
+                                    </div>
+                                    <div class="stepper-controls">
+                                        <button class="btn-step" onclick="adjustQty('inp-operatives', -1)">-</button>
+                                        <input type="text" id="inp-operatives" class="stepper-input" value="0" readonly>
+                                        <button class="btn-step" onclick="adjustQty('inp-operatives', 1)">+</button>
+                                    </div>
+                                </div>
+                                <div class="stepper-item">
+                                    <div class="stepper-label">
+                                        <span>ELITE</span>
+                                        <span id="avail-elites" style="color:var(--text-dark);">0</span>
+                                    </div>
+                                    <div class="stepper-controls">
+                                        <button class="btn-step" onclick="adjustQty('inp-elites', -1)">-</button>
+                                        <input type="text" id="inp-elites" class="stepper-input" value="0" readonly>
+                                        <button class="btn-step" onclick="adjustQty('inp-elites', 1)">+</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- WEAPON PICKER -->
+                            <div class="control-section-title" style="margin-top: 4px; color: var(--warning);">
+                                <span>2. ASSIGN SQUAD WEAPONRY</span>
+                                <span id="weapon-limit-indicator" style="color:var(--text-light);">EQUIPPED: 0 / 0</span>
+                            </div>
+                            <div class="control-grid">
+                                <div class="stepper-item">
+                                    <div class="stepper-label">
+                                        <span>PISTOL</span>
+                                        <span id="avail-pistol" style="color:var(--text-dark);">0</span>
+                                    </div>
+                                    <div class="stepper-controls">
+                                        <button class="btn-step" onclick="adjustQty('inp-pistol', -1)">-</button>
+                                        <input type="text" id="inp-pistol" class="stepper-input" value="0" readonly>
+                                        <button class="btn-step" onclick="adjustQty('inp-pistol', 1)">+</button>
+                                    </div>
+                                </div>
+                                <div class="stepper-item">
+                                    <div class="stepper-label">
+                                        <span>SMG</span>
+                                        <span id="avail-smg" style="color:var(--text-dark);">0</span>
+                                    </div>
+                                    <div class="stepper-controls">
+                                        <button class="btn-step" onclick="adjustQty('inp-smg', -1)">-</button>
+                                        <input type="text" id="inp-smg" class="stepper-input" value="0" readonly>
+                                        <button class="btn-step" onclick="adjustQty('inp-smg', 1)">+</button>
+                                    </div>
+                                </div>
+                                <div class="stepper-item">
+                                    <div class="stepper-label">
+                                        <span>RIFLE</span>
+                                        <span id="avail-rifle" style="color:var(--text-dark);">0</span>
+                                    </div>
+                                    <div class="stepper-controls">
+                                        <button class="btn-step" onclick="adjustQty('inp-rifle', -1)">-</button>
+                                        <input type="text" id="inp-rifle" class="stepper-input" value="0" readonly>
+                                        <button class="btn-step" onclick="adjustQty('inp-rifle', 1)">+</button>
+                                    </div>
+                                </div>
+                                <div class="stepper-item">
+                                    <div class="stepper-label">
+                                        <span>SNIPER</span>
+                                        <span id="avail-sniper" style="color:var(--text-dark);">0</span>
+                                    </div>
+                                    <div class="stepper-controls">
+                                        <button class="btn-step" onclick="adjustQty('inp-sniper', -1)">-</button>
+                                        <input type="text" id="inp-sniper" class="stepper-input" value="0" readonly>
+                                        <button class="btn-step" onclick="adjustQty('inp-sniper', 1)">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="prob-container" class="probability-box hidden">
+                            <div class="probability-header">
+                                <span>ATTACK SUCCESS CHANCE:</span>
+                                <span id="prob-value" style="color:var(--success)">0%</span>
+                            </div>
+                            <div class="prob-bar-bg">
+                                <div id="prob-bar-fill" class="prob-bar-fill"></div>
+                            </div>
+                            <div id="squad-power-text" style="font-size: 0.72rem; color: var(--text-dark); margin-top: 6px; text-align: right;"></div>
+                        </div>
+
+                        <button id="btn-deploy-operators" class="btn btn-warning hidden" onclick="dispatchOperatorsAuto()">DEPLOY OPERATORS</button>
+                        <button id="btn-manual-breach" class="btn btn-primary" onclick="launchMission()">EXECUTE MISSION</button>
+                    </div>
+
+                    <div style="margin-top: 10px;">
+                        <button id="btn-pass-day" class="btn btn-warning" style="width: 100%;" onclick="advanceDayManually()">PASS DAY / WAIT FOR INTEL (+1 DAY)</button>
+                        <button id="btn-armory-dossier" class="btn btn-primary hidden" style="width: 100%; border-color: var(--info);" onclick="toggleUnlocksScreen()">[ OPEN ARMORY & SHOP ]</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BRANCHING CAMPAIGN VIEW (CHOOSE-YOUR-OWN-ADVENTURE MODE) -->
+        <div id="branch-view" class="hidden">
+            <!-- CURRENT LEVEL BRIEFING -->
+            <div id="branch-mission-panel" class="hidden" style="background: var(--panel-light); border: 1px solid var(--border); padding: 25px; border-radius: var(--radius);">
+                <h2 id="branch-mission-title" style="font-family: 'Arial Black', sans-serif; color: var(--text-light); margin-top:0;">LEVEL 1</h2>
+                <div id="branch-mission-briefing" class="briefing-text" style="max-height: none; line-height: 1.6;"></div>
+
+                <div style="display: flex; gap: 15px; margin-top: 20px;">
+                    <button class="btn btn-success" style="flex:1" onclick="resolveBranchMission(true)">MISSION ACCOMPLISHED</button>
+                    <button class="btn btn-fail" style="flex:1" onclick="resolveBranchMission(false)">OPERATOR DOWN / KIA</button>
+                </div>
+            </div>
+
+            <!-- BRANCHING DECISION POINT -->
+            <div id="branch-choice-panel" class="hidden setup-box">
+                <h2 style="font-family: 'Arial Black', sans-serif; color: var(--text-light); text-transform: uppercase; margin-bottom: 5px;">CHOOSE YOUR PATH</h2>
+                <p id="branch-choice-prompt" style="color: var(--text-dark); margin-bottom: 20px; font-size: 0.95rem; max-width: 620px; margin-left: auto; margin-right: auto;"></p>
+                <div id="branch-choice-options" class="branch-choice-grid"></div>
+            </div>
+        </div>
+
+        <!-- FIELD DEPLOYMENT ACTION VIEW -->
+        <div id="mission-action-view" class="hidden" style="background: var(--panel-light); border: 1px solid var(--border); padding: 25px; border-radius: var(--radius);">
+            <h2 id="active-mission-title" style="font-family: 'Arial Black', sans-serif; color: var(--text-light); margin-top:0;">FIELD DEPLOYMENT IN PROGRESS</h2>
+            <div id="active-mission-briefing" class="briefing-text" style="max-height: none; line-height: 1.6;"></div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 20px;">
+                <button class="btn btn-success" style="flex:1" onclick="completeMission(true)">MISSION ACCOMPLISHED</button>
+                <button class="btn btn-fail" style="flex:1" onclick="completeMission(false)">OPERATOR DOWN / KIA</button>
+            </div>
+        </div>
+
+        <!-- END CAMPAIGN VIEW -->
+        <div id="end-view" class="hidden" style="text-align: center; padding: 40px 20px;">
+            <h1 id="end-status" style="font-family: 'Arial Black', sans-serif; font-size: 2rem; margin-top:0;"></h1>
+            <div id="end-story" class="briefing-text" style="max-width: 600px; margin: 20px auto;"></div>
+            <button class="btn btn-primary" style="margin-top: 15px;" onclick="resetToSetup()">RE-INITIALIZE NETCOM</button>
+        </div>
+    </div>
+
+    <div class="watermark">RAVEN SHIELD TACTICAL MAP // DIRECTIVE 6</div>
 </div>
 
 <script>
-    // Full roster of all 94 maps
-    const maps = [
-        "Oil Refinery", "Alpine Village", "Mountain Highway", "Shipyard", "Private Airport", 
-        "Island Estate", "Meat Packing Plant", "Import-Export", "Penthouse", "Banking House", 
-        "Meat Packing Plant 2", "Island Estate 2", "Garage", "Parade Line-up", "Alley Strike", 
-        "Ancient Temple", "Chapel", "Firehouse", "The Mall", "Convenience Store", 
-        "Back Alley", "Chemical Zero", "The Compound", "Disgruntled Customers", "Desal", 
-        "Quartier General", "Quartier General 2", "El Diablo's Club", "Emergency Room", "Falling Rain", 
-        "Garage (Dark)", "Down the Rabbit Hole", "Water Treatment Facility", "Water Treatment Facility 2", "Heat", 
-        "IG Embassy", "IG Canals of Venice", "Import Export (Dark)", "Island Estate Night", "Metropolitan Library", 
-        "Made of Stone", "Cinema", "Norad", "Parade (Dark)", "Playground", 
-        "Port Town", "Factory", "Black Star", "Residential Trauma", "Weapon Deal", 
-        "Rich", "Rich 2", "Modern Office", "Modern Office 2", "Spa", 
-        "London Wharf", "Chalet Fall", "Art Museum", "Oil Tanker", "Shopping Spree", 
-        "Locked Up", "Trailer Park", "Transport", "Flynn's Arcade", "Vice Bar", 
-        "Village", "Village Snow", "Bowling Alley", "Weapons Cache", "White Oak", 
-        "UnderWorld", "Underworld 2", "Embassy", "Agora Market", "A Castle in Milan", 
-        "Luxury Hotel", "Luxury Hotel Night", "Old City", "Street's of Milan", "Italian Warehouse", 
-        "Warehouse Night", "Siberian Base", "Subway Station", "Cold Thunder", "Docks", 
-        "Iron Comet", "Kilment Ohridski University", "Little Wing", "Military Installation", "Nuclear Reactor", 
-        "Safe House", "Storage Facility", "Training Camp"
-    ];
-    
-    const modes = [
-        { name: "Terrorist Hunt", desc: "Systematic elimination of all hostile combatants on-site." },
-        { name: "Hostage Rescue", desc: "Locate and secure all civilians before they are harmed." },
-        { name: "Lone Wolf", desc: "Single-operator infiltration and successful exfiltration." },
-        { name: "Stealth Wolf", desc: "Infiltrate, complete objectives, and extract without alerting hostiles." },
-        { name: "Stealth Hunt", desc: "Eliminate all hostiles while maintaining absolute ghost status." }
-    ];
+    /* ARMORY TAB SWITCHER */
+    function switchArmoryTab(tabName) {
+        document.querySelectorAll('.armory-tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
-    // Map narratives
-    const customMapNarratives = {
+        document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
+        document.getElementById(`btn-tab-${tabName}`).classList.add('active');
+    }
+
+    const regionalMaps = {
+        URBAN: ["Cinema", "Vice Bar", "Bowling Alley", "Luxury Hotel", "Luxury Hotel Night", "Banking House", "Modern Office", "Modern Office 2", "Penthouse", "The Mall", "Subway Station", "Back Alley", "Alley Strike", "Convenience Store", "Disgruntled Customers", "Quartier General", "Quartier General 2", "El Diablo's Club", "Emergency Room", "Metropolitan Library", "Norad", "Playground", "Residential Trauma", "Shopping Spree", "Flynn's Arcade", "Agora Market", "Old City", "Street's of Milan", "Kilment Ohridski University"],
+        MOUNTAIN: ["Alpine Village", "Mountain Highway", "Chalet Fall", "Siberian Base", "White Oak", "Training Camp", "Heat", "Ancient Temple", "Chapel", "The Compound", "Down the Rabbit Hole", "Made of Stone", "Village", "Village Snow", "UnderWorld", "Underworld 2", "A Castle in Milan"],
+        COASTAL: ["Port Town", "Shipyard", "Oil Tanker", "Island Estate", "Island Estate 2", "Island Estate Night", "London Wharf", "Desal", "Private Airport", "IG Canals of Venice", "Docks"],
+        INDUSTRIAL: ["Oil Refinery", "Meat Packing Plant", "Meat Packing Plant 2", "Chemical Zero", "Nuclear Reactor", "Military Installation", "Weapons Cache", "Factory", "Safe House", "Import-Export", "Import Export (Dark)", "Garage", "Garage (Dark)", "Parade Line-up", "Parade (Dark)", "Firehouse", "Falling Rain", "Water Treatment Facility", "Water Treatment Facility 2", "IG Embassy", "Black Star", "Weapon Deal", "Rich", "Rich 2", "Spa", "Locked Up", "Trailer Park", "Transport", "Embassy", "Italian Warehouse", "Warehouse Night", "Cold Thunder", "Iron Comet", "Little Wing", "Storage Facility"]
+    };
+
+    const mapNarratives = {
         "Oil Refinery": "Towering distillation columns hiss with volatile gases. Hostiles have seized control of the primary valves, threatening a catastrophic structural blow-out.",
         "Alpine Village": "Snow-covered chalets and winding mountain paths present high-ground vulnerabilities. A quiet getaway turned frozen winter battleground.",
         "Mountain Highway": "A blinding blizzard has trapped a critical logistics convoy. Terrorists have seized control of this frozen, high-altitude mountain pass, transforming the highway into a lethal bottleneck.",
@@ -436,7 +1393,7 @@
         "Underworld 2": "An extended tier of the Nevada simulation grid, featuring an artificial night sky array and simulated canyon paths built deep underground.",
         "Embassy": "A sovereign diplomatic outpost placed on emergency containment lockdown. Hostiles have reinforced the main administrative check-desks.",
         "Agora Market": "A sun-baked Middle Eastern marketplace has instantly transformed into a chaotic warzone. Sprawling alleys, dense canvas merchant stalls, and overhead rooftops provide endless blind corners and perfect concealment for hiding insurgents.",
-        "A Castle in Milan": "An ancient European stronghold complete with massive stone ramparts, grand halls, and defensive battlements.",
+        "A Castle in Milan": "Ancient European stronghold complete with massive stone ramparts, grand halls, and defensive battlements.",
         "Luxury Hotel": "A five-star resort tower featuring expansive ground lobbies, open escalators, and long residential hallways lined with uniform doors.",
         "Luxury Hotel Night": "The premium hotel layout under night conditions. Failing emergency lights create a highly irregular visibility grid across the rooms.",
         "Old City": "Dense historical housing quarters divided by winding cobblestone passages. The erratic layout challenges traditional tactical planning.",
@@ -457,74 +1414,1028 @@
         "Training Camp": "A makeshift training center constructed by hostiles. Simulated obstacle fields and firing tracks are now fully live fire areas."
     };
 
-    const objectiveComplications = {
-        "Terrorist Hunt": "THE HOSTILES ARE DUG IN DEEP AND EXPECTING A FIGHT. EXECUTE SYSTEMATIC ROOM CLEARING BEFORE REINFORCEMENTS INTERCEPT.",
-        "Hostage Rescue": "INTELLIGENCE CONFIRMS TARGETS ARE LOCATED IN THE CENTRAL SECTOR. SEIZE INITIATIVE AND SECURE CIVILIANS SILENTLY.",
-        "Lone Wolf": "THE LZ IS ISOLATED AND NO BACKUP IS AVAILABLE. YOU ARE COMPLETELY INDEPENDENT. ENGAGE AT YOUR OWN DISCRETION.",
-        "Stealth Wolf": "THE AREA IS RIGGED WITH TRIPWIRES AND SECURITY NETWORK LINKS. TRIPPING ALARMS RESULTS IN IMMEDIATE MISSION FAILURE.",
-        "Stealth Hunt": "NEUTRALIZE THREATS INDIVIDUALLY WITHOUT BREAKING PERIMETER STEALTH. DO NOT ALLOW PATROLS TO LOCATE DOWNED HOSTILES."
+    const modes = [
+        { name: "Terrorist Hunt", desc: "Systematic elimination of all hostile combatants on-site.", baseDiff: 110, reward: 250, tier: 2 },
+        { name: "Hostage Rescue", desc: "Locate and secure all civilians before they are harmed.", baseDiff: 180, reward: 500, tier: 3 },
+        { name: "Lone Wolf", desc: "Single-operator infiltration and successful exfiltration.", baseDiff: 50, reward: 100, tier: 1 },
+        { name: "Stealth Wolf", desc: "Infiltrate, complete objectives, and extract without alerting hostiles.", baseDiff: 70, reward: 120, tier: 1 },
+        { name: "Stealth Hunt", desc: "Eliminate all hostiles while maintaining absolute ghost status.", baseDiff: 140, reward: 300, tier: 2 }
+    ];
+
+    // Persistent Game State
+    let money = parseInt(localStorage.getItem('rs_money')) || 500;
+    let skinPoints = parseInt(localStorage.getItem('rs_skin_points')) || 0;
+    let unlockedItems = JSON.parse(localStorage.getItem('rs_unlocks')) || [];
+    let equippedTheme = localStorage.getItem('rs_equipped_theme') || '';
+
+    // Operator & Weapon Inventory
+    let inventory = JSON.parse(localStorage.getItem('rs_inventory')) || {
+        recruits: 0,
+        operatives: 0,
+        elites: 0,
+        weapons: {
+            pistol: 0,
+            smg: 0,
+            rifle: 0,
+            sniper: 0
+        }
     };
 
-    let campaign = [];
-    let currentStep = 0;
+    let gameMode = 'standard';
+    let targetCampaignLength = 5;
+    let completedMissions = 0;
+    let currentDay = 1;
+    let activeNodes = [];
+    let selectedNodeIndex = null;
+    let previousView = 'setup-view';
+
+    function triggerMoneyGainAnimation(amount) {
+        if (gameMode !== 'strategy') return;
+        const pop = document.createElement('div');
+        pop.className = 'money-pop';
+        pop.innerHTML = `+$${amount} CASH! 💵`;
+        document.body.appendChild(pop);
+        setTimeout(() => pop.remove(), 1800);
+    }
+
+    function triggerMoneySpendAnimation(amount) {
+        const pop = document.createElement('div');
+        pop.className = 'money-spend-pop';
+        pop.innerHTML = `-$${amount} 💸`;
+        document.body.appendChild(pop);
+        setTimeout(() => pop.remove(), 1800);
+    }
+
+    function triggerDeployedWinAnimation(sectorName) {
+        const pop = document.createElement('div');
+        pop.className = 'win-pop';
+        pop.innerHTML = `🏆 MISSION ACCOMPLISHED!<br><span style="font-size: 1.3rem; color:#fff;">SECTOR SECURED: ${sectorName}</span>`;
+        document.body.appendChild(pop);
+        setTimeout(() => pop.remove(), 2000);
+    }
+
+    function triggerTroopLossAnimation(casualtyCount) {
+        const app = document.getElementById('app-container');
+        app.classList.add('loss-flash');
+        setTimeout(() => app.classList.remove('loss-flash'), 500);
+
+        const pop = document.createElement('div');
+        pop.className = 'loss-pop';
+        pop.innerHTML = `⚠️ MISSION FAILED!<br><span style="font-size: 1.4rem; color:#fff;">-${casualtyCount} OPERATORS KIA</span>`;
+        document.body.appendChild(pop);
+        setTimeout(() => pop.remove(), 2000);
+    }
 
     function getRandomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-    function generateNarrative(map, mode) {
-        const hook = customMapNarratives[map] || "Intel on this sector is limited. Proceed with extreme caution and expect heavy resistance upon breach.";
-        return `${hook}<br><br><span class="label">> COMPLICATION:</span> <span style="color: var(--text-light);">${objectiveComplications[mode.name]}</span><br><br>TACTICAL BREACH SEQUENCE ENGAGED AT <strong>${map.toUpperCase()}</strong>.`;
+    function getTotalOperators() {
+        return inventory.recruits + inventory.operatives + inventory.elites;
     }
 
-    function initCampaign(length) {
-        campaign = [];
-        currentStep = 0;
-        for(let i=0; i<length; i++) {
-            let map = getRandomItem(maps);
-            let mode = getRandomItem(modes);
-            campaign.push({ map, mode, intro: generateNarrative(map, mode) });
-        }
-        document.getElementById('setup-view').classList.add('hidden');
-        document.getElementById('mission-view').classList.remove('hidden');
-        showMission();
+    function getTotalWeapons() {
+        return inventory.weapons.pistol + inventory.weapons.smg + inventory.weapons.rifle + inventory.weapons.sniper;
     }
 
-    function showMission() {
-        const m = campaign[currentStep];
-        document.getElementById('mission-header').innerText = `TACTICAL DOSSIER: PHASE ${currentStep + 1} OF ${campaign.length}`;
-        document.getElementById('map-disp').innerText = m.map;
-        document.getElementById('mode-disp').innerText = m.mode.name;
-        document.getElementById('mode-desc').innerText = m.mode.desc.toUpperCase();
-        document.getElementById('story-disp').innerHTML = m.intro;
+    function getAssignedResources() {
+        let assignedOperators = { recruits: 0, operatives: 0, elites: 0 };
+        let assignedWeapons = { pistol: 0, smg: 0, rifle: 0, sniper: 0 };
+
+        activeNodes.forEach(node => {
+            if (node.underAttack) {
+                assignedOperators.recruits += node.underAttack.operators.recruits;
+                assignedOperators.operatives += node.underAttack.operators.operatives;
+                assignedOperators.elites += node.underAttack.operators.elites;
+
+                if (node.underAttack.weapons) {
+                    assignedWeapons.pistol += node.underAttack.weapons.pistol || 0;
+                    assignedWeapons.smg += node.underAttack.weapons.smg || 0;
+                    assignedWeapons.rifle += node.underAttack.weapons.rifle || 0;
+                    assignedWeapons.sniper += node.underAttack.weapons.sniper || 0;
+                }
+            }
+        });
+
+        return { operators: assignedOperators, weapons: assignedWeapons };
     }
 
-    function rerollMission() {
-        let newMap = getRandomItem(maps);
-        let newMode = getRandomItem(modes);
-        campaign[currentStep] = { map: newMap, mode: newMode, intro: generateNarrative(newMap, newMode) };
-        showMission();
+    function getAvailableResources() {
+        let assigned = getAssignedResources();
+        return {
+            operators: {
+                recruits: Math.max(0, inventory.recruits - assigned.operators.recruits),
+                operatives: Math.max(0, inventory.operatives - assigned.operators.operatives),
+                elites: Math.max(0, inventory.elites - assigned.operators.elites)
+            },
+            weapons: {
+                pistol: Math.max(0, inventory.weapons.pistol - assigned.weapons.pistol),
+                smg: Math.max(0, inventory.weapons.smg - assigned.weapons.smg),
+                rifle: Math.max(0, inventory.weapons.rifle - assigned.weapons.rifle),
+                sniper: Math.max(0, inventory.weapons.sniper - assigned.weapons.sniper)
+            }
+        };
     }
 
-    function nextMission() {
-        currentStep++;
-        if(currentStep >= campaign.length) endCampaign(true);
-        else showMission();
+    function saveState() {
+        localStorage.setItem('rs_money', money);
+        localStorage.setItem('rs_skin_points', skinPoints);
+        localStorage.setItem('rs_inventory', JSON.stringify(inventory));
+        localStorage.setItem('rs_unlocks', JSON.stringify(unlockedItems));
+        localStorage.setItem('rs_equipped_theme', equippedTheme);
     }
 
-    function endCampaign(success) {
-        document.getElementById('mission-view').classList.add('hidden');
-        document.getElementById('end-view').classList.remove('hidden');
-        const status = document.getElementById('end-status');
-        const story = document.getElementById('end-story');
-        if(success) {
-            status.innerText = "OPERATION: DEBRIEF COMPLETE";
-            status.style.color = "var(--success)";
-            story.innerText = "ALL OPERATIONAL TARGETS SECURED. CRISIS MITIGATED WITH MINIMAL COLLATERAL IMPACT. LOGGING LOGISTICAL DATA INTO THE RAINBOW DATABASES.";
+    function updatePointsDisplay() {
+        const totalOperators = getTotalOperators();
+        const totalWeapons = getTotalWeapons();
+
+        document.getElementById('money-counter').innerText = `MONEY: $${money}`;
+        document.getElementById('skin-points-counter').innerText = `SKIN PTS: ${skinPoints} SP`;
+        document.getElementById('operators-counter').innerText = `OPERATORS: ${totalOperators}`;
+        document.getElementById('weapons-counter').innerText = `WEAPONS: ${totalWeapons} / ${totalOperators}`;
+
+        saveState();
+    }
+
+    function getAvailableModes() {
+        if (gameMode !== 'strategy') return modes;
+
+        const totalOperators = getTotalOperators();
+        if (totalOperators < 1) {
+            return modes.filter(m => m.tier === 1);
+        } else if (totalOperators <= 4) {
+            return modes.filter(m => m.tier <= 2);
         } else {
-            status.innerText = "OPERATION: COMPROMISED / MISSION FAILED";
-            status.style.color = "var(--fail)";
-            story.innerText = "RAINBOW CELL TOOK CRITICAL LOSSES. MISSION THRESHOLD EXCEEDED. TACTICAL RETREAT RE-ROUTE CODE REQUIRED.";
+            return modes;
         }
     }
+
+    function validateActiveMissionModes() {
+        if (gameMode !== 'strategy') return;
+        const availableModes = getAvailableModes();
+
+        activeNodes.forEach(node => {
+            if (!availableModes.some(m => m.name === node.mode.name)) {
+                node.mode = getRandomItem(availableModes);
+            }
+        });
+    }
+
+    function applyTheme(themeClass) {
+        document.body.className = themeClass;
+        equippedTheme = themeClass;
+        saveState();
+        updateUnlocksUI();
+    }
+
+    function resetProgressAndUnlocks() {
+        if (confirm("Are you sure you want to reset ALL progress, Skin Points (SP), and UNLOCKED UI SKINS?")) {
+            money = 500;
+            skinPoints = 0;
+            unlockedItems = [];
+            equippedTheme = '';
+            inventory = { recruits: 0, operatives: 0, elites: 0, weapons: { pistol: 0, smg: 0, rifle: 0, sniper: 0 } };
+            
+            localStorage.clear();
+            document.body.className = '';
+            
+            validateActiveMissionModes();
+            updatePointsDisplay();
+            updateUnlocksUI();
+            renderMapNodes();
+            if (selectedNodeIndex !== null && activeNodes[selectedNodeIndex]) selectNode(selectedNodeIndex);
+            
+            alert("All progress and UI skins have been reset to default.");
+        }
+    }
+
+    function unlockItem(itemId, cost) {
+        if (skinPoints >= cost && !unlockedItems.includes(itemId)) {
+            skinPoints -= cost;
+            unlockedItems.push(itemId);
+            saveState();
+            updatePointsDisplay();
+            updateUnlocksUI();
+            if (itemId.startsWith('theme-')) applyTheme(itemId);
+        } else if (skinPoints < cost) {
+            alert(`Insufficient Skin Points! You need ${cost} SP. Complete campaign operations to earn Skin Points.`);
+        }
+    }
+
+    function updateUnlocksUI() {
+        const skins = ['nightvision', 'arctic', 'desert', 'cyberpunk', 'stealth', 'redalert'];
+        const costs = { nightvision:250, arctic:500, desert:750, cyberpunk:1200, stealth:1800, redalert:2500 };
+
+        skins.forEach(skin => {
+            const btn = document.getElementById(`btn-unlock-${skin}`);
+            if (btn) {
+                if (unlockedItems.includes(`theme-${skin}`)) {
+                    btn.className = 'btn';
+                    btn.innerText = equippedTheme === `theme-${skin}` ? 'EQUIPPED' : 'EQUIP SKIN';
+                    btn.onclick = () => applyTheme(`theme-${skin}`);
+                } else {
+                    btn.className = 'btn btn-primary';
+                    btn.innerText = `UNLOCK (${costs[skin]} SP)`;
+                    btn.onclick = () => unlockItem(`theme-${skin}`, costs[skin]);
+                }
+            }
+        });
+    }
+
+    function toggleUnlocksScreen() {
+        const unlocksView = document.getElementById('unlocks-view');
+        const setupView = document.getElementById('setup-view');
+        const mapView = document.getElementById('map-view');
+
+        if (unlocksView.classList.contains('hidden')) {
+            if (!setupView.classList.contains('hidden')) previousView = 'setup-view';
+            if (!mapView.classList.contains('hidden')) previousView = 'map-view';
+            
+            setupView.classList.add('hidden');
+            mapView.classList.add('hidden');
+            unlocksView.classList.remove('hidden');
+        } else {
+            unlocksView.classList.add('hidden');
+            document.getElementById(previousView).classList.remove('hidden');
+        }
+    }
+
+    function returnToMainMenu() {
+        if (confirm("Return to Main Menu? Current active campaign session progress will be closed.")) {
+            document.getElementById('map-view').classList.add('hidden');
+            document.getElementById('branch-view').classList.add('hidden');
+            document.getElementById('unlocks-view').classList.add('hidden');
+            document.getElementById('mission-action-view').classList.add('hidden');
+            document.getElementById('end-view').classList.add('hidden');
+            document.getElementById('btn-return-menu').classList.add('hidden');
+            
+            document.getElementById('setup-view').classList.remove('hidden');
+            document.getElementById('campaign-progress').classList.add('hidden');
+            document.getElementById('day-counter').classList.add('hidden');
+        }
+    }
+
+    function generateMissionForRegion(regionKey) {
+        const regionMapList = regionalMaps[regionKey];
+        const mapName = getRandomItem(regionMapList);
+        const availableModes = getAvailableModes();
+        const mode = getRandomItem(availableModes);
+        
+        const difficultyRandomFactor = 0.7 + (Math.random() * 0.8);
+        const missionDifficulty = Math.round(mode.baseDiff * difficultyRandomFactor);
+
+        let threatLabel = "STANDARD";
+        if (missionDifficulty > 150) threatLabel = "EXTREME";
+        else if (missionDifficulty > 100) threatLabel = "HIGH";
+        else if (missionDifficulty > 60) threatLabel = "MODERATE";
+        else threatLabel = "LOW";
+
+        let xMin = 10, xMax = 40, yMin = 10, yMax = 40;
+        if (regionKey === 'MOUNTAIN')    { xMin = 12; xMax = 38; yMin = 15; yMax = 40; }
+        if (regionKey === 'URBAN')       { xMin = 60; xMax = 88; yMin = 15; yMax = 40; }
+        if (regionKey === 'COASTAL')     { xMin = 12; xMax = 38; yMin = 60; yMax = 85; }
+        if (regionKey === 'INDUSTRIAL')  { xMin = 60; xMax = 88; yMin = 60; yMax = 85; }
+
+        let x, y, overlap;
+        let attempts = 0;
+
+        do {
+            overlap = false;
+            x = Math.floor(Math.random() * (xMax - xMin)) + xMin;
+            y = Math.floor(Math.random() * (yMax - yMin)) + yMin;
+
+            for (let node of activeNodes) {
+                let dx = node.x - x;
+                let dy = node.y - y;
+                if (Math.sqrt(dx * dx + dy * dy) < 14) {
+                    overlap = true;
+                    break;
+                }
+            }
+            attempts++;
+        } while (overlap && attempts < 50);
+
+        const daysLeft = Math.floor(Math.random() * 3) + 2;
+
+        return { 
+            id: Math.floor(1000 + Math.random() * 9000), 
+            region: regionKey, 
+            map: mapName, 
+            mode, 
+            difficulty: missionDifficulty,
+            threatLabel,
+            x, 
+            y, 
+            daysLeft,
+            underAttack: null
+        };
+    }
+
+    function updateCounters() {
+        document.getElementById('campaign-progress').innerText = `DAYS: ${completedMissions} / ${targetCampaignLength}`;
+        document.getElementById('day-counter').innerText = `DAY: ${currentDay < 10 ? '0' + currentDay : currentDay}`;
+    }
+
+    // ============================================================
+    // BRANCHING CAMPAIGN MODE (CHOOSE-YOUR-OWN-ADVENTURE)
+    // ============================================================
+
+    // Opening insertion-point flavor, keyed by region. Used only for the level-1 decision.
+    const branchOpeningOptions = {
+        URBAN: { label: "Insert into the urban district", text: "Dense city blocks mean tight sightlines and civilians in the mix. Control the tempo here and you control the fight." },
+        MOUNTAIN: { label: "Insert via the mountain approach", text: "A harder route in, but the high ground and open sightlines favor a disciplined squad." },
+        COASTAL: { label: "Insert along the coastline", text: "Weather and tide work against a clean approach, but the waterfront rarely expects trouble from the sea." },
+        INDUSTRIAL: { label: "Insert through the industrial sector", text: "Loud machinery and blind corners everywhere. Cover is everywhere, and so is the enemy." }
+    };
+
+    // Branching decision points offered between levels. Each leads to a different region,
+    // and therefore a different map + story background once chosen.
+    const branchDecisions = [
+        {
+            prompt: "Field intelligence splits into two credible leads. Command needs a call.",
+            options: [
+                { region: 'URBAN', label: 'Track the cell through the city', text: "A wiretap places the ringleader somewhere in the urban sprawl, moving between safehouses before nightfall. Moving now means chasing a target who knows these streets better than you do." },
+                { region: 'MOUNTAIN', label: 'Cut off the mountain route', text: "Satellite imagery shows a convoy threading through the high passes. The terrain favors a well-placed ambush, but bad weather could close the route before your team arrives." }
+            ]
+        },
+        {
+            prompt: "Two operation windows open at once. Only one squad is ready to move.",
+            options: [
+                { region: 'COASTAL', label: 'Hit the coastal shipment', text: "A cargo vessel is due to make port within hours. Boarding it now could sever a key supply line, but naval patrols in the area are unpredictable." },
+                { region: 'INDUSTRIAL', label: 'Raid the industrial complex', text: "Surveillance confirms heavy activity at a fabrication plant on the edge of the industrial district. It's a hard target, but the intel window won't last." }
+            ]
+        },
+        {
+            prompt: "Debrief from the last operation opens a fork in the investigation.",
+            options: [
+                { region: 'URBAN', label: 'Follow the money into the city', text: "Financial records trace back to a shell operation downtown. Clean, procedural, and dangerous in its own quiet way." },
+                { region: 'INDUSTRIAL', label: 'Storm the supply depot', text: "A tip places a weapons cache inside a fenced industrial yard. Moving fast could catch the guard rotation off balance." }
+            ]
+        },
+        {
+            prompt: "Command presents two extraction opportunities before the trail goes cold.",
+            options: [
+                { region: 'MOUNTAIN', label: 'Push into the highlands', text: "A spotter reports enemy fighters withdrawing into elevated terrain. Altitude and cover favor whoever gets there first." },
+                { region: 'COASTAL', label: 'Seal off the waterfront', text: "Harbor traffic suggests an escape by sea is being prepared. Closing the waterfront now could trap the whole cell." }
+            ]
+        },
+        {
+            prompt: "Two credible sightings come in within minutes of each other.",
+            options: [
+                { region: 'URBAN', label: 'Sweep the city block', text: "Local police report gunfire near a commercial strip downtown. Civilians are still in the area." },
+                { region: 'COASTAL', label: 'Secure the docks', text: "Harbor authority flags unusual container movement after hours. Could be nothing. Could be everything." }
+            ]
+        },
+        {
+            prompt: "Analysts hand over two target packages. Time to choose a direction.",
+            options: [
+                { region: 'MOUNTAIN', label: 'Assault the high-ground compound', text: "A fortified compound sits above the tree line, difficult to approach and harder to leave quietly." },
+                { region: 'INDUSTRIAL', label: 'Breach the factory floor', text: "An abandoned-looking factory has come alive with radio traffic. Something is being staged inside." }
+            ]
+        },
+        {
+            prompt: "The operation forks based on where the last squad's intel points.",
+            options: [
+                { region: 'COASTAL', label: 'Trace the oil tanker', text: "A flagged vessel changed course overnight. Boarding it at sea carries real risk, but so does letting it reach open water." },
+                { region: 'MOUNTAIN', label: 'Chase the alpine convoy', text: "Trucks were spotted climbing toward a mountain pass before dawn. The cold works against you as much as it works against them." }
+            ]
+        },
+        {
+            prompt: "Two windows, one squad. Command wants a decision now.",
+            options: [
+                { region: 'URBAN', label: 'Clear the urban district', text: "Reports describe an active situation somewhere in the city core. Details are thin. Time isn't on your side." },
+                { region: 'INDUSTRIAL', label: 'Lock down the industrial yard', text: "A perimeter breach was logged at an industrial site an hour ago. Whoever got in hasn't been seen leaving." }
+            ]
+        },
+        {
+            prompt: "A short window opens before the trail scatters for good.",
+            options: [
+                { region: 'MOUNTAIN', label: 'Track them into the highlands', text: "Thermal imaging picks up movement well above the standard patrol routes. It's a long climb into unfriendly terrain." },
+                { region: 'URBAN', label: 'Block the city exits', text: "Traffic cameras suggest the cell is trying to slip out through the city rather than the open country. Fewer places to hide, more ways to lose them." }
+            ]
+        },
+        {
+            prompt: "Two threads, both time-sensitive. The squad can only pull one.",
+            options: [
+                { region: 'INDUSTRIAL', label: 'Hit the processing plant', text: "Night-shift workers reported armed men moving equipment through a restricted section. It doesn't add up, and that's the problem." },
+                { region: 'COASTAL', label: 'Intercept at the port', text: "A last-minute manifest change on an outbound freighter has analysts nervous. If it sails, the trail goes with it." }
+            ]
+        }
+    ];
+
+    let branchLevel = 0;
+    let branchTargetLength = 5;
+    let branchSuccesses = 0;
+    let branchFailures = 0;
+    let currentBranchMission = null;
+    let lastBranchDecisionIndex = -1;
+
+    function initBranchingCampaign(length) {
+        gameMode = 'branching';
+        branchTargetLength = length;
+        branchLevel = 0;
+        branchSuccesses = 0;
+        branchFailures = 0;
+        currentBranchMission = null;
+
+        document.getElementById('setup-view').classList.add('hidden');
+        document.getElementById('branch-view').classList.remove('hidden');
+        document.getElementById('btn-return-menu').classList.remove('hidden');
+        document.getElementById('campaign-progress').classList.remove('hidden');
+        document.getElementById('day-counter').classList.add('hidden');
+        document.getElementById('money-counter').classList.add('hidden');
+        document.getElementById('operators-counter').classList.add('hidden');
+        document.getElementById('weapons-counter').classList.add('hidden');
+
+        updateBranchCounter();
+        updatePointsDisplay();
+
+        showOpeningChoice();
+    }
+
+    function updateBranchCounter() {
+        document.getElementById('campaign-progress').innerText = `LEVEL: ${branchLevel} / ${branchTargetLength}`;
+    }
+
+    function generateBranchMission(regionKey) {
+        const regionMapList = regionalMaps[regionKey];
+        const mapName = getRandomItem(regionMapList);
+        const mode = getRandomItem(modes);
+
+        const difficultyRandomFactor = 0.7 + (Math.random() * 0.8);
+        const missionDifficulty = Math.round(mode.baseDiff * difficultyRandomFactor);
+
+        let threatLabel = "STANDARD";
+        if (missionDifficulty > 150) threatLabel = "EXTREME";
+        else if (missionDifficulty > 100) threatLabel = "HIGH";
+        else if (missionDifficulty > 60) threatLabel = "MODERATE";
+        else threatLabel = "LOW";
+
+        const narrative = mapNarratives[mapName] || "High-priority tactical scenario. Eliminate hostiles and secure all operational parameters.";
+
+        return { region: regionKey, map: mapName, mode, threatLabel, narrative };
+    }
+
+    function showOpeningChoice() {
+        const regions = ['URBAN', 'MOUNTAIN', 'COASTAL', 'INDUSTRIAL'];
+        const shuffled = regions.sort(() => 0.5 - Math.random());
+        const picks = shuffled.slice(0, 2).map(r => ({
+            region: r,
+            label: branchOpeningOptions[r].label,
+            text: branchOpeningOptions[r].text
+        }));
+
+        renderBranchChoice("Command is finalizing tonight's operation. Choose your squad's opening insertion point.", picks);
+    }
+
+    function presentNextBranchChoice() {
+        let idx;
+        do {
+            idx = Math.floor(Math.random() * branchDecisions.length);
+        } while (branchDecisions.length > 1 && idx === lastBranchDecisionIndex);
+        lastBranchDecisionIndex = idx;
+
+        const decision = branchDecisions[idx];
+        renderBranchChoice(decision.prompt, decision.options);
+    }
+
+    function renderBranchChoice(prompt, options) {
+        document.getElementById('branch-mission-panel').classList.add('hidden');
+        document.getElementById('branch-choice-panel').classList.remove('hidden');
+
+        document.getElementById('branch-choice-prompt').innerText = prompt;
+
+        const container = document.getElementById('branch-choice-options');
+        container.innerHTML = '';
+        options.forEach(opt => {
+            const card = document.createElement('div');
+            card.className = 'branch-choice-card';
+            card.innerHTML = `
+                <div class="branch-choice-region">${opt.region}</div>
+                <div class="branch-choice-label">${opt.label}</div>
+                <div class="branch-choice-text">${opt.text}</div>
+            `;
+            card.onclick = () => chooseBranch(opt.region, opt.label, opt.text);
+            container.appendChild(card);
+        });
+    }
+
+    function chooseBranch(region, label, text) {
+        branchLevel++;
+        currentBranchMission = generateBranchMission(region);
+        currentBranchMission.choiceLabel = label;
+        currentBranchMission.choiceText = text;
+
+        updateBranchCounter();
+        renderBranchMission();
+    }
+
+    function renderBranchMission() {
+        document.getElementById('branch-choice-panel').classList.add('hidden');
+        document.getElementById('branch-mission-panel').classList.remove('hidden');
+
+        const m = currentBranchMission;
+        document.getElementById('branch-mission-title').innerText = `LEVEL ${branchLevel} // ${m.map.toUpperCase()}`;
+        document.getElementById('branch-mission-briefing').innerHTML = `
+            <strong>THE CALL:</strong> ${m.choiceLabel}<br>
+            <em>${m.choiceText}</em><br><br>
+            <strong>SECTOR:</strong> ${m.region} // ${m.map}<br>
+            <strong>MISSION TYPE:</strong> ${m.mode.name}<br>
+            <strong>OBJECTIVE:</strong> ${m.mode.desc}<br>
+            <strong>THREAT LEVEL:</strong> <span style="color: var(--warning); font-weight: bold;">${m.threatLabel}</span><br><br>
+            <strong>TACTICAL SITUATION:</strong> ${m.narrative}
+        `;
+    }
+
+    function resolveBranchMission(success) {
+        if (success) {
+            branchSuccesses++;
+            triggerDeployedWinAnimation(currentBranchMission.map.toUpperCase());
+        } else {
+            branchFailures++;
+            triggerTroopLossAnimation(1);
+        }
+
+        if (branchLevel >= branchTargetLength) {
+            endCampaign(branchSuccesses >= branchFailures);
+            return;
+        }
+
+        presentNextBranchChoice();
+    }
+
+    function initMapCampaign(mode, length) {
+        gameMode = mode;
+        targetCampaignLength = length;
+        completedMissions = 0;
+        currentDay = 1;
+        
+        inventory = {
+            recruits: 0,
+            operatives: 0,
+            elites: 0,
+            weapons: { pistol: 0, smg: 0, rifle: 0, sniper: 0 }
+        };
+
+        if (gameMode === 'strategy') {
+            money = 0;
+            document.getElementById('money-counter').classList.remove('hidden');
+            document.getElementById('operators-counter').classList.remove('hidden');
+            document.getElementById('weapons-counter').classList.remove('hidden');
+            document.getElementById('btn-pass-day').classList.add('hidden');
+            document.getElementById('btn-armory-dossier').classList.remove('hidden');
+        } else {
+            money = 500;
+            document.getElementById('money-counter').classList.add('hidden');
+            document.getElementById('operators-counter').classList.add('hidden');
+            document.getElementById('weapons-counter').classList.add('hidden');
+            document.getElementById('btn-pass-day').classList.remove('hidden');
+            document.getElementById('btn-armory-dossier').classList.add('hidden');
+        }
+
+        document.getElementById('setup-view').classList.add('hidden');
+        document.getElementById('map-view').classList.remove('hidden');
+        document.getElementById('btn-return-menu').classList.remove('hidden');
+        document.getElementById('campaign-progress').classList.remove('hidden');
+        document.getElementById('day-counter').classList.remove('hidden');
+
+        updateCounters();
+        updatePointsDisplay();
+        
+        activeNodes = [];
+        const regions = ['URBAN', 'MOUNTAIN', 'COASTAL', 'INDUSTRIAL'];
+        const chosenRegions = regions.sort(() => 0.5 - Math.random()).slice(0, 3);
+        
+        chosenRegions.forEach(reg => {
+            activeNodes.push(generateMissionForRegion(reg));
+        });
+
+        renderMapNodes();
+        clearDossier();
+    }
+
+    function renderMapNodes() {
+        const container = document.getElementById('nodes-container');
+        container.innerHTML = '';
+
+        activeNodes.forEach((node, idx) => {
+            const nodeEl = document.createElement('div');
+            const isAttacking = node.underAttack !== null;
+            
+            nodeEl.className = `mission-node ${selectedNodeIndex === idx ? 'active' : ''} ${isAttacking ? 'under-attack' : ''}`;
+            nodeEl.style.left = `${node.x}%`;
+            nodeEl.style.top = `${node.y}%`;
+            nodeEl.onclick = () => selectNode(idx);
+
+            let timerText = `⏱️ ${node.daysLeft} ${node.daysLeft === 1 ? 'DAY' : 'DAYS'} LEFT`;
+            let timerClass = "node-timer";
+
+            if (isAttacking) {
+                const totalSent = node.underAttack.operators.recruits + node.underAttack.operators.operatives + node.underAttack.operators.elites;
+                timerText = `⚔️ DEPLOYED (${totalSent} OPERATORS)`;
+                timerClass = "node-timer attacking";
+            }
+
+            nodeEl.innerHTML = `
+                <div class="node-pin">
+                    <div class="node-ping"></div>
+                </div>
+                <div class="node-details">
+                    <div class="node-label">${node.map.toUpperCase()}</div>
+                    <div class="${timerClass}">${timerText}</div>
+                </div>
+            `;
+
+            container.appendChild(nodeEl);
+        });
+    }
+
+    function adjustQty(inputId, delta) {
+        const availRes = getAvailableResources();
+        const input = document.getElementById(inputId);
+        let val = parseInt(input.value) || 0;
+        let maxVal = 0;
+
+        if (inputId === 'inp-recruits') maxVal = availRes.operators.recruits;
+        if (inputId === 'inp-operatives') maxVal = availRes.operators.operatives;
+        if (inputId === 'inp-elites') maxVal = availRes.operators.elites;
+
+        if (inputId === 'inp-pistol') maxVal = availRes.weapons.pistol;
+        if (inputId === 'inp-smg') maxVal = availRes.weapons.smg;
+        if (inputId === 'inp-rifle') maxVal = availRes.weapons.rifle;
+        if (inputId === 'inp-sniper') maxVal = availRes.weapons.sniper;
+
+        val = Math.max(0, Math.min(val + delta, maxVal));
+
+        const currentRecruits = inputId === 'inp-recruits' ? val : (parseInt(document.getElementById('inp-recruits').value) || 0);
+        const currentOperatives = inputId === 'inp-operatives' ? val : (parseInt(document.getElementById('inp-operatives').value) || 0);
+        const currentElites = inputId === 'inp-elites' ? val : (parseInt(document.getElementById('inp-elites').value) || 0);
+        const totalAssignedOperators = currentRecruits + currentOperatives + currentElites;
+
+        if (selectedNodeIndex !== null) {
+            const node = activeNodes[selectedNodeIndex];
+            if (node && node.mode.name === 'Lone Wolf' && totalAssignedOperators > 1) {
+                return;
+            }
+        }
+
+        if (inputId.startsWith('inp-p') || inputId.startsWith('inp-s') || inputId.startsWith('inp-r')) {
+            const wPistol = inputId === 'inp-pistol' ? val : (parseInt(document.getElementById('inp-pistol').value) || 0);
+            const wSmg = inputId === 'inp-smg' ? val : (parseInt(document.getElementById('inp-smg').value) || 0);
+            const wRifle = inputId === 'inp-rifle' ? val : (parseInt(document.getElementById('inp-rifle').value) || 0);
+            const wSniper = inputId === 'inp-sniper' ? val : (parseInt(document.getElementById('inp-sniper').value) || 0);
+            const totalAssignedWeapons = wPistol + wSmg + wRifle + wSniper;
+
+            if (totalAssignedWeapons > totalAssignedOperators) return;
+        }
+
+        input.value = val;
+        updateDispatchCalc();
+    }
+
+    function calculateDispatchedSquadPower(operators, weapons) {
+        let recruitPower = operators.recruits * 5;
+        let operativePower = operators.operatives * 20;
+        let elitePower = operators.elites * 60;
+        let operatorPower = recruitPower + operativePower + elitePower;
+
+        let weaponPower = 0;
+        if (weapons) {
+            weaponPower = (weapons.pistol * 10) + (weapons.smg * 30) + (weapons.rifle * 75) + (weapons.sniper * 150);
+        }
+        return Math.round(operatorPower + weaponPower);
+    }
+
+    function updateDispatchCalc() {
+        if (selectedNodeIndex === null || gameMode !== 'strategy') return;
+        const m = activeNodes[selectedNodeIndex];
+        if (!m || m.underAttack) return;
+
+        const r = parseInt(document.getElementById('inp-recruits').value) || 0;
+        const o = parseInt(document.getElementById('inp-operatives').value) || 0;
+        const e = parseInt(document.getElementById('inp-elites').value) || 0;
+
+        const wPistol = parseInt(document.getElementById('inp-pistol').value) || 0;
+        const wSmg = parseInt(document.getElementById('inp-smg').value) || 0;
+        const wRifle = parseInt(document.getElementById('inp-rifle').value) || 0;
+        const wSniper = parseInt(document.getElementById('inp-sniper').value) || 0;
+
+        const totalOperatorsAssigned = r + o + e;
+        const totalWeaponsAssigned = wPistol + wSmg + wRifle + wSniper;
+
+        document.getElementById('weapon-limit-indicator').innerText = `EQUIPPED: ${totalWeaponsAssigned} / ${totalOperatorsAssigned}`;
+
+        const dispatchedPower = calculateDispatchedSquadPower(
+            { recruits: r, operatives: o, elites: e },
+            { pistol: wPistol, smg: wSmg, rifle: wRifle, sniper: wSniper }
+        );
+
+        let successProb = Math.min(95, Math.max(0, Math.round((dispatchedPower / m.difficulty) * 50)));
+        if (totalOperatorsAssigned === 0) successProb = 0;
+
+        document.getElementById('prob-value').innerText = `${successProb}%`;
+        document.getElementById('prob-bar-fill').style.width = `${successProb}%`;
+        document.getElementById('squad-power-text').innerText = `SQUAD COMBAT POWER: ${dispatchedPower} | TARGET REQ: ${m.difficulty}`;
+    }
+
+    function selectNode(index) {
+        selectedNodeIndex = index;
+        renderMapNodes();
+        
+        const m = activeNodes[index];
+        document.getElementById('dossier-node-id').innerText = `#OPS-${m.id}`;
+        
+        const rewardRow = gameMode === 'strategy' ? `
+            <div class="objective-row">
+                <div class="label">> REWARD VALUE:</div>
+                <div class="value" style="color:var(--success);">$${m.mode.reward} CASH</div>
+            </div>` : '';
+
+        document.getElementById('dossier-content').innerHTML = `
+            <div class="objective-row">
+                <div class="label">> SECTOR & LOCATION:</div>
+                <div class="value">${m.region} SECTOR // ${m.map}</div>
+            </div>
+            <div class="objective-row">
+                <div class="label">> MISSION MODE:</div>
+                <div class="value">${m.mode.name}</div>
+            </div>
+            ${rewardRow}
+            <div class="objective-row">
+                <div class="label">> INTEL EXPIRATION:</div>
+                <div class="value">${m.daysLeft} ${m.daysLeft === 1 ? 'DAY' : 'DAYS'} REMAINING</div>
+            </div>
+            <div style="font-family: 'Consolas', monospace; font-size: 0.72rem; color: var(--accent); font-weight: bold; margin-top: 10px;">[ FIELD BRIEFING ]</div>
+            <div class="briefing-text">
+                <strong>THREAT LEVEL:</strong> <span style="color: var(--warning); font-weight: bold;">${m.threatLabel}</span><br><br>
+                <strong>MISSION DESCRIPTION:</strong> ${m.mode.desc}
+            </div>
+        `;
+
+        document.getElementById('dossier-actions').classList.remove('hidden');
+
+        if (gameMode === 'strategy') {
+            const avail = getAvailableResources();
+            document.getElementById('avail-operators-indicator').innerText = `AVAIL: ${avail.operators.recruits + avail.operators.operatives + avail.operators.elites}`;
+            document.getElementById('avail-recruits').innerText = avail.operators.recruits;
+            document.getElementById('avail-operatives').innerText = avail.operators.operatives;
+            document.getElementById('avail-elites').innerText = avail.operators.elites;
+
+            document.getElementById('avail-pistol').innerText = avail.weapons.pistol;
+            document.getElementById('avail-smg').innerText = avail.weapons.smg;
+            document.getElementById('avail-rifle').innerText = avail.weapons.rifle;
+            document.getElementById('avail-sniper').innerText = avail.weapons.sniper;
+
+            if (m.underAttack) {
+                document.getElementById('operator-dispatch-panel').classList.add('hidden');
+                document.getElementById('prob-container').classList.add('hidden');
+                document.getElementById('btn-deploy-operators').classList.add('hidden');
+                document.getElementById('btn-manual-breach').classList.add('hidden');
+                
+                const sentOperators = m.underAttack.operators;
+                const sentWeapons = m.underAttack.weapons;
+                const totalSent = sentOperators.recruits + sentOperators.operatives + sentOperators.elites;
+                const totalWpn = sentWeapons.pistol + sentWeapons.smg + sentWeapons.rifle + sentWeapons.sniper;
+
+                document.getElementById('dossier-content').innerHTML += `
+                    <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--warning); padding: 10px; border-radius: 6px; margin-top: 10px; text-align: center; font-family: monospace; font-size: 0.78rem; color: var(--warning);">
+                        ⚡ SQUAD DEPLOYED (${totalSent} Operators armed with ${totalWpn} Firearms)<br><br>
+                        Execute mission on another target to complete 1 operational day and resolve this deployment.
+                    </div>
+                `;
+            } else {
+                document.getElementById('operator-dispatch-panel').classList.remove('hidden');
+                document.getElementById('prob-container').classList.remove('hidden');
+                document.getElementById('btn-deploy-operators').classList.remove('hidden');
+                document.getElementById('btn-manual-breach').classList.remove('hidden');
+                
+                ['recruits', 'operatives', 'elites', 'pistol', 'smg', 'rifle', 'sniper'].forEach(id => {
+                    document.getElementById(`inp-${id}`).value = 0;
+                });
+                updateDispatchCalc();
+            }
+        } else {
+            document.getElementById('operator-dispatch-panel').classList.add('hidden');
+            document.getElementById('prob-container').classList.add('hidden');
+            document.getElementById('btn-deploy-operators').classList.add('hidden');
+            document.getElementById('btn-manual-breach').classList.remove('hidden');
+        }
+    }
+
+    function clearDossier() {
+        selectedNodeIndex = null;
+        document.getElementById('dossier-node-id').innerText = "#NONE";
+        document.getElementById('dossier-content').innerHTML = `
+            <p style="color: var(--text-dark); font-size: 0.85rem; text-align: center; margin: 40px 0;">
+                > SELECT AN ACTIVE MISSION NODE ON THE MAP TO INSPECT INTEL
+            </p>
+        `;
+        document.getElementById('dossier-actions').classList.add('hidden');
+    }
+
+    function dispatchOperatorsAuto() {
+        if (selectedNodeIndex === null) return;
+        const m = activeNodes[selectedNodeIndex];
+        if (!m || m.underAttack) return;
+
+        const r = parseInt(document.getElementById('inp-recruits').value) || 0;
+        const o = parseInt(document.getElementById('inp-operatives').value) || 0;
+        const e = parseInt(document.getElementById('inp-elites').value) || 0;
+
+        const wPistol = parseInt(document.getElementById('inp-pistol').value) || 0;
+        const wSmg = parseInt(document.getElementById('inp-smg').value) || 0;
+        const wRifle = parseInt(document.getElementById('inp-rifle').value) || 0;
+        const wSniper = parseInt(document.getElementById('inp-sniper').value) || 0;
+
+        const totalDispatched = r + o + e;
+
+        if (totalDispatched <= 0) {
+            alert("Please assign at least 1 operator to deploy!");
+            return;
+        }
+
+        if (m.mode.name === 'Lone Wolf' && totalDispatched > 1) {
+            alert("Lone Wolf missions only allow you to deploy one operator!");
+            return;
+        }
+
+        m.underAttack = { 
+            operators: { recruits: r, operatives: o, elites: e },
+            weapons: { pistol: wPistol, smg: wSmg, rifle: wRifle, sniper: wSniper }
+        };
+
+        alert(`DEPLOYMENT COMMENCED!\n\nDeploying to ${m.map.toUpperCase()} with ${totalDispatched} operators.\n\nExecute mission on another target to advance time!`);
+
+        renderMapNodes();
+        selectNode(selectedNodeIndex);
+    }
+
+    function trimWeaponsToMatchOperators() {
+        const totalOperators = getTotalOperators();
+        while (getTotalWeapons() > totalOperators && getTotalWeapons() > 0) {
+            if (inventory.weapons.pistol > 0) inventory.weapons.pistol--;
+            else if (inventory.weapons.smg > 0) inventory.weapons.smg--;
+            else if (inventory.weapons.rifle > 0) inventory.weapons.rifle--;
+            else if (inventory.weapons.sniper > 0) inventory.weapons.sniper--;
+        }
+    }
+
+    async function advanceDay() {
+        currentDay++;
+        let attackLogs = [];
+
+        for (let i = activeNodes.length - 1; i >= 0; i--) {
+            let node = activeNodes[i];
+            if (node.underAttack) {
+                let squadOperators = node.underAttack.operators;
+                let squadWeapons = node.underAttack.weapons;
+                let power = calculateDispatchedSquadPower(squadOperators, squadWeapons);
+                let successProb = Math.min(95, Math.max(5, Math.round((power / node.difficulty) * 50)));
+                let roll = Math.floor(Math.random() * 100) + 1;
+
+                if (roll <= successProb) {
+                    let reward = node.mode.reward;
+                    if (gameMode === 'strategy') {
+                        money += reward;
+                        triggerMoneyGainAnimation(reward);
+                    }
+                    completedMissions++;
+                    triggerDeployedWinAnimation(node.map.toUpperCase());
+                    attackLogs.push(`✅ MISSION ACCOMPLISHED at ${node.map.toUpperCase()} (${node.mode.name})!${gameMode === 'strategy' ? `\nEarned +$${reward} Cash!` : ''}`);
+                    activeNodes.splice(i, 1);
+                    
+                    await new Promise(res => setTimeout(res, 1000));
+                } else {
+                    const totalLost = squadOperators.recruits + squadOperators.operatives + squadOperators.elites;
+                    
+                    inventory.recruits = Math.max(0, inventory.recruits - squadOperators.recruits);
+                    inventory.operatives = Math.max(0, inventory.operatives - squadOperators.operatives);
+                    inventory.elites = Math.max(0, inventory.elites - squadOperators.elites);
+
+                    inventory.weapons.pistol = Math.max(0, inventory.weapons.pistol - (squadWeapons.pistol || 0));
+                    inventory.weapons.smg = Math.max(0, inventory.weapons.smg - (squadWeapons.smg || 0));
+                    inventory.weapons.rifle = Math.max(0, inventory.weapons.rifle - (squadWeapons.rifle || 0));
+                    inventory.weapons.sniper = Math.max(0, inventory.weapons.sniper - (squadWeapons.sniper || 0));
+
+                    trimWeaponsToMatchOperators();
+
+                    triggerTroopLossAnimation(totalLost);
+                    attackLogs.push(`❌ SQUAD DEFEATED at ${node.map.toUpperCase()}! Lost ${totalLost} operators.`);
+                    activeNodes.splice(i, 1);
+                    await new Promise(res => setTimeout(res, 1000));
+                }
+            } else {
+                node.daysLeft--;
+                if (node.daysLeft <= 0) {
+                    attackLogs.push(`⚠️ INTEL EXPIRED: Operation window for ${node.map.toUpperCase()} has closed.`);
+                    activeNodes.splice(i, 1);
+                }
+            }
+        }
+
+        while (activeNodes.length < 3) {
+            const regions = ['URBAN', 'MOUNTAIN', 'COASTAL', 'INDUSTRIAL'];
+            const reg = getRandomItem(regions);
+            activeNodes.push(generateMissionForRegion(reg));
+        }
+
+        renderMapNodes();
+        updateCounters();
+        updatePointsDisplay();
+
+        if (completedMissions >= targetCampaignLength) {
+            endCampaign(true);
+        }
+    }
+
+    function advanceDayManually() {
+        advanceDay();
+    }
+
+    function launchMission() {
+        if (selectedNodeIndex === null) return;
+        const m = activeNodes[selectedNodeIndex];
+        
+        document.getElementById('map-view').classList.add('hidden');
+        document.getElementById('mission-action-view').classList.remove('hidden');
+
+        document.getElementById('active-mission-title').innerText = `${m.map.toUpperCase()} - ${m.mode.name.toUpperCase()}`;
+        
+        const narrative = mapNarratives[m.map] || "High-priority tactical scenario. Eliminate hostiles and secure all operational parameters.";
+        document.getElementById('active-mission-briefing').innerHTML = `
+            <strong>SECTOR:</strong> ${m.region}<br>
+            <strong>OBJECTIVE:</strong> ${m.mode.desc}<br><br>
+            <strong>TACTICAL SITUATION:</strong> ${narrative}
+        `;
+    }
+
+    function completeMission(success) {
+        document.getElementById('mission-action-view').classList.add('hidden');
+        document.getElementById('map-view').classList.remove('hidden');
+
+        if (success) {
+            completedMissions++;
+            triggerDeployedWinAnimation(activeNodes[selectedNodeIndex].map.toUpperCase());
+            if (gameMode === 'strategy') {
+                const reward = activeNodes[selectedNodeIndex].mode.reward;
+                money += reward;
+                triggerMoneyGainAnimation(reward);
+            }
+            activeNodes.splice(selectedNodeIndex, 1);
+            
+            while (activeNodes.length < 3) {
+                const regions = ['URBAN', 'MOUNTAIN', 'COASTAL', 'INDUSTRIAL'];
+                const reg = getRandomItem(regions);
+                activeNodes.push(generateMissionForRegion(reg));
+            }
+        } else {
+            if (gameMode === 'strategy') {
+                let totalOps = getTotalOperators();
+                if (totalOps > 0) {
+                    if (inventory.recruits > 0) inventory.recruits--;
+                    else if (inventory.operatives > 0) inventory.operatives--;
+                    else if (inventory.elites > 0) inventory.elites--;
+                    
+                    trimWeaponsToMatchOperators();
+                    triggerTroopLossAnimation(1);
+                }
+            }
+        }
+
+        clearDossier();
+        advanceDay();
+    }
+
+    function endCampaign(victory) {
+        document.getElementById('map-view').classList.add('hidden');
+        document.getElementById('branch-view').classList.add('hidden');
+        document.getElementById('end-view').classList.remove('hidden');
+
+        const spEarned = victory ? 300 : 50;
+        skinPoints += spEarned;
+        updatePointsDisplay();
+
+        document.getElementById('end-status').innerText = victory ? "CAMPAIGN VICTORY!" : "OPERATION TERMINATED";
+        document.getElementById('end-status').style.color = victory ? "var(--success)" : "var(--fail)";
+
+        document.getElementById('end-story').innerHTML = victory ? 
+            `All target sectors have been successfully neutralized. Your squad performed with outstanding efficiency.<br><br><strong>REWARD: +${spEarned} SKIN POINTS (SP)</strong>` : 
+            `Operational parameters exceeded acceptable casualty thresholds.<br><br><strong>CONSOLATION: +${spEarned} SKIN POINTS (SP)</strong>`;
+    }
+
+    function resetToSetup() {
+        document.getElementById('end-view').classList.add('hidden');
+        document.getElementById('setup-view').classList.remove('hidden');
+        document.getElementById('btn-return-menu').classList.add('hidden');
+        document.getElementById('campaign-progress').classList.add('hidden');
+        document.getElementById('day-counter').classList.add('hidden');
+        updatePointsDisplay();
+    }
+
+    // Initialize UI on load
+    window.addEventListener('DOMContentLoaded', () => {
+        if (equippedTheme) document.body.className = equippedTheme;
+        updatePointsDisplay();
+        updateUnlocksUI();
+    });
 </script>
 </body>
 </html>
